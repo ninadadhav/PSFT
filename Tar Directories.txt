@@ -1,0 +1,62 @@
+#!/bin/bash
+input_csv(){
+echo Enter the path to the Input CSV File...
+read -p 'Input Path Here and press Enter : ' inputpath
+if [[ -f $inputpath ]]
+ then
+    echo "Parsing File..."
+    echo
+ else
+    echo "File does not exist....exiting"
+    echo
+    exit 1
+fi
+sed -n '2,$p' <$inputpath > parsed_file.csv
+yum install -q -y dos2unix > input.log && dos2unix -q parsed_file.csv
+yum install -q -y pv > input.log
+echo
+echo Following are the directories you mentioned in your input file...
+
+while read LINE;
+do echo "$LINE";
+if [[ $LINE == */ ]]
+  then
+     echo Path cannot end with a / .... Please correct the input file and run the script again
+     exit 1
+  else
+     echo
+fi
+done < parsed_file.csv
+}
+
+input_csv
+sleep 1
+echo
+echo Creating a Temporary Directory to place all Tarball files...
+echo
+read -p 'Enter a path to create a tmp directory : ' create_directory
+mypath=$create_directory
+mkdir -p ${mypath}
+echo New directory created at $mypath
+sleep 1
+
+echo Starting the Tarball...
+echo
+
+slist=(`cat "parsed_file.csv" `)
+slen=${#slist[@]}
+dlist=(`cat "parsed_file.csv" | awk -F "/" '{ print $NF; }' `)
+dlen=${#dlist[@]}
+for (( i=0,j=0; i<${slen},j<${dlen} ; i++,j++));
+ do
+ echo Current Directory being archived : ${slist[$i]}
+ if [[ ${slist[$i]} == */ ]]
+  then
+     tar cf - ${slist[$i]} -P | pv -r -b -t | gzip > ${mypath}${dlist[$j]}.tar.gz
+  else
+     tar cf - ${slist[$i]} -P | pv -r -b -t | gzip > ${mypath}/${dlist[$j]}.tar.gz
+ fi
+ done
+
+echo
+echo Tarball Process Successfully Completed...

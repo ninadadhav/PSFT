@@ -1,0 +1,4 @@
+Target Server IP Address,Source Server IP Address,Name of Source Server,Directories to be Tar  - 1,2,3,4,5,6,7
+192.168.13.1,192.111.222.33,Application Server,/home/opc/ninad,/home/opc/consulting,,,,,
+192.112.45.32,192.111.234.55,Web Server,/home/opc/test,/home/opc/OCS,,,,,
+112.34.243.44,192.168.10.11,Batch Server,/home/opc/IaaS,/home/opc/oracle,/home/opc/migrations,,,,

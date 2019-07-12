@@ -1,0 +1,10 @@
+#!/bin/bash
+
+create_keys(){
+mkdir -p /home/opc/keys
+cd /home/opc/keys
+ssh-keygen -t rsa -N "" -f /home/opc/keys/ocs_key
+echo "Key Pair has been created at /home/opc/keys"
+}
+
+create_keys

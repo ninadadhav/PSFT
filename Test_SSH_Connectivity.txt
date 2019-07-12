@@ -1,0 +1,82 @@
+#!/bin/bash
+
+input_csv(){
+echo Enter the path to the Input CSV File...
+read -p 'Input Path to the file and press Enter : ' inputpath
+if [[ -f $inputpath ]]
+ then
+    echo
+ else
+    echo File does not exist at $inputpath ....exiting
+    echo
+    exit 1
+fi
+sed -n '2,$p' <$inputpath > parsed_file.csv
+yum install -q -y dos2unix >> input.log && dos2unix -q parsed_file.csv
+yum install -q -y pv >> input.log
+echo
+echo Following are the Source Directories mentioned in the Load Sheet
+cat parsed_file.csv | cut -d"," -f2
+echo
+echo Following are the Target Directories mentioned in the Load Sheet
+cat parsed_file.csv | cut -d"," -f1
+echo
+}
+
+input_csv
+
+ssh_connectivity_source(){
+slist=(`cat parsed_file.csv | cut -d"," -f2 `)
+slen=${#slist[@]}
+
+for (( i=0; i<${slen} ; i++));
+ do
+ echo Current ip being sshd : ${slist[$i]}
+ status=$(ssh -q -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=5 -i /home/opc/keys/ocs_key opc@${slist[$i]} echo ok 2>&1)
+ if [[ $status == ok ]] ; then
+   echo aConnectivity Established !!
+ elif [[ $status == "Permission denied"* ]] ; then
+  echo Permission Denied...Please check the ssh configuration of the Target Server
+ else
+  echo Incorrect Authentication..Please check the IP Address and Key provided in the path to the Target Server.
+ fi
+ echo
+ sleep 1
+done
+}
+
+ssh_connectivity_target(){
+xlist=(`cat parsed_file.csv | cut -d"," -f1 `)
+xlen=${#xlist[@]}
+
+for (( i=0; i<${xlen} ; i++));
+ do
+ echo Current ip being sshd : ${xlist[$i]}
+ status=$(ssh -q -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=5 -i /home/opc/keys/ocs_key opc@${xlist[$i]} echo ok 2>&1)
+ if [[ $status == ok ]] ; then
+   echo Connectivity Established !!
+ elif [[ $status == "Permission denied"* ]] ; then
+  echo Permission Denied...Please check the ssh configuration of the Target Server
+ else
+  echo Incorrect Authentication..Please check the IP Address and Key provided in the path to the Target Server.
+ fi
+ echo
+ sleep 1
+done
+}
+
+echo _______________________________________________
+echo
+echo Checking Connectivity to the Source Servers...
+echo _______________________________________________
+echo
+ssh_connectivity_source
+sleep 1
+
+echo _______________________________________________
+echo
+echo Checking Connectivity to the Target Servers...
+echo _______________________________________________
+echo
+ssh_connectivity_target
+echo Completed

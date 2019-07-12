@@ -1,0 +1,4 @@
+Ip Address of the Target Server,Name of Target Server,"Directories to be Tar (Separate by Comma. Eg : /home/opc/test1,/home/opc/test2,... )"
+192.168.13.1,Application Server,"/u01/app/psoft/tools85702/jre,/u01/app/psoft/wls12"
+192.112.45.32,Web Server,"/u01/app/oracle/product/12.2.0.1/client,/u01/app/psoft/tux12/tuxedo12.2.2.0.0"
+112.34.243.44,Batch Server,"/home/opc/ninadtest,/home/opc/ninadtest2,/home/opc/oracle/test"

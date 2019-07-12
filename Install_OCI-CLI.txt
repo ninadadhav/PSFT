@@ -1,0 +1,57 @@
+#!/bin/bash
+check_ocicli(){
+curl -L -O -s https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh >> input.log && chmod +x install.sh && ./install.sh --accept-all-defaults && && cd && source ~/.bash_profile
+clear
+echo OCI CLI has been successfully installed...
+fi
+}
+
+readvalues(){
+        echo Provide asked parameters and hit ENTER for each :
+        echo _______________________________________________________________________________
+        echo
+        read -p 'Enter Tenancy OCID : ' tenancy_ocid
+        read -p 'Enter User OCID : ' user_ocid
+        read -p 'Enter fingerprint of the User : ' fingerprint
+        read -p 'Enter Region (eg us-ashburn) : ' region
+        read -p 'Enter path to the OCI API pem key : ' private_key
+
+        while true ;
+        do
+          if [ -z "$tenancy_ocid" ] || [ -z "$user_ocid" ] || [ -z "$region" ] || [ -z "$fingerprint" ] || [ -z "$fingerprint" ];
+            then
+            echo "One or more of the Inputs are empty, please enter all inputs..."
+            echo
+            readvalues
+          else
+            break
+          fi
+        done
+}
+
+
+install_cli(){
+mkdir -p /root/.oci
+echo
+
+cat > /root/.oci/config <<EOF
+[DEFAULT]
+user=$user_ocid
+fingerprint=$fingerprint
+key_file=$private_key
+tenancy=$tenancy_ocid
+region=$region
+EOF
+
+sleep 1
+chmod 600 /root/.oci/config
+echo Testing OCI CLI Connectivity...
+echo
+echo "oci os ns get"
+oci os ns get
+echo OCI has been successfully installed
+}
+
+check_ocicli
+readvalues
+install_cli

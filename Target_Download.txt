@@ -1,0 +1,95 @@
+#!/bin/bash
+#cd /home/opc
+echo
+echo Checking if OCI CLI is installed..
+echo
+echo
+if [ -d "/root/lib/oracle-cli" ]
+then
+   echo "OCI CLI is already installed...Continuing with code"
+   echo __________________________________________________________________________________
+   source ~/.bash_profile
+else
+   rm -rf /root/lib/oracle-cli
+   echo OCI CLI not found...Installing OCI CLI with required dependancies...
+   curl -L -O -s https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh >> input.log && chmod +x install.sh &&./install.sh --accept-all-defaults && source ~/.bash_profile
+   echo
+   clear
+   echo OCI CLI successfully installed...
+fi
+
+sleep 1
+echo
+echo Creating CONFIG file for OCI CLI...
+echo
+echo Provide asked parameters and hit ENTER for each :
+echo _______________________________________________________________________________
+echo
+
+readvalues(){
+        read -p 'Enter Tenancy OCID : ' tenancy_ocid
+        read -p 'Enter User OCID : ' user_ocid
+        read -p 'Enter Region (eg us-ashburn) : ' region
+        read -p 'Enter fingerprint of the User : ' fingerprint
+        read -p 'Enter path to the OCI API pem key : ' private_key
+}
+
+readvalues
+while true ;
+ do
+   if [ -z "$tenancy_ocid" ] || [ -z "$user_ocid" ] || [ -z "$region" ] || [ -z "$fingerprint" ] || [ -z "$fingerprint" ];
+   then
+      echo
+      echo "One or more of the Inputs are empty, please enter all inputs..."
+      echo
+      readvalues
+   else
+      break
+   fi
+done
+
+
+mkdir -p /root/.oci
+echo
+echo
+
+cat > /root/.oci/config <<EOF
+[DEFAULT]
+user=$user_ocid
+fingerprint=$fingerprint
+key_file=$private_key
+tenancy=$tenancy_ocid
+region=$region
+EOF
+
+sleep 1
+chmod 600 /root/.oci/config
+chmod 600 /root/.ssh/oci_api_key.pem
+echo
+sleep 1
+
+echo Config file created
+
+echo Testing OCI Install...
+echo
+echo "oci os ns get"
+oci os ns get
+parsed=$(oci os ns get > i.log && sed -n '2p' i.log | grep -oh "\w*data\w*")
+if [[ "data" == $parsed ]]
+then
+  echo OCI has been successfully installed and Tested
+else
+  echo Something went wrong, OCI install unsuccessfull
+  exit 1
+fi
+
+echo _____________________________________________________________
+echo
+
+echo Downloading Tar Files from the Object Storage
+read -p 'Enter Bucket name from where to download the TAR Files " ' target_bucket
+read -p 'Enter the path to directory where you want to download the object storage files to : ' objectstorage
+
+oci os object bulk-download  -bn $target_bucket --download-dir $objectstorage
+
+echo All Files have been downloaded to Directory $objectstorage

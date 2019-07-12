@@ -1,0 +1,48 @@
+#!/bin/bash
+input_csv(){
+read -p 'Enter Load Sheet Path : ' inputpath
+if [[ -f $inputpath ]]
+ then
+    echo
+ else
+    echo "File does not exist at $inputpath ....Exiting"
+    exit 1
+fi
+
+yum install -q -y dos2unix > input.log && yum install -q -y pv >> input.log
+sed -n '2,$p' <$inputpath > parsed_file.csv
+dos2unix -q parsed_file.csv
+}
+
+tarball(){
+read -p 'Enter Directoy path where Tar Files will be placed: ' tmp_directory
+mkdir -p $tmp_directory
+if [[ -d $tmp_directory ]]
+  then
+    echo Temporary Directory Created at $tmp_directory
+  else
+    echo $tmp_directory Directory not present or cannot be created...please check permissions
+    exit 1
+fi
+cd $tmp_directory
+alist=(`cat /home/opc/parsed_file.csv | cut -d"," -f2-3 | sed -e "s/ /-/g" | sed -e "s/,/-/g"`)
+alen=${#alist[@]}
+blist=(`cat /home/opc/parsed_file.csv | cut -d"," -f4- | sed -e "s/,/ /g"`)
+blen=${#blist[@]}
+for (( i=0,j=0; i<${alen},j<${blen} ; i++,j++));
+ do
+   tar -cvPf ${alist[$i]}.tar.gz ${blist[$j]} | pv -r -b -t
+   sleep 1
+ done
+}
+
+input_csv
+echo
+echo Starting the Tarball process...
+echo
+tarball
+echo
+echo _______________________________________________________________________
+echo
+echo Tarball Process Successfully Completed...
+echo Tar Files have been placed under $tmp_directory Directory.
