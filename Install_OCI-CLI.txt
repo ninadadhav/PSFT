@@ -18,7 +18,7 @@ readvalues(){
 
         while true ;
         do
-          if [ -z "$tenancy_ocid" ] || [ -z "$user_ocid" ] || [ -z "$region" ] || [ -z "$fingerprint" ] || [ -z "$fingerprint" ];
+          if [ -z "$tenancy_ocid" ] || [ -z "$user_ocid" ] || [ -z "$region" ] || [ -z "$fingerprint" ];
             then
             echo "One or more of the Inputs are empty, please enter all inputs..."
             echo
@@ -27,10 +27,24 @@ readvalues(){
             break
           fi
         done
-        if [ -f "$private_key ];
-        do 
 }
 
+private_key_function(){
+        if [ -f "$private_key ];
+          then 
+          echo Reading API Key
+        else
+          echo Key does not exist at the path mentioned...Please check !!!
+          private_key_function
+         fi 
+        if [ -z "$private_key" ];
+          then 
+          echo Key Found
+        else
+          echo Input cannot be empty...
+          private_key_function
+         fi 
+}
 
 install_cli(){
 mkdir -p /root/.oci
@@ -56,4 +70,5 @@ echo OCI has been successfully installed
 
 check_ocicli
 readvalues
+private_key_function
 install_cli
