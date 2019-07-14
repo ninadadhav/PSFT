@@ -27,6 +27,8 @@ readvalues(){
             break
           fi
         done
+        if [ -f "$private_key ];
+        do 
 }
 
 
