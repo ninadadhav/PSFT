@@ -2,7 +2,7 @@
 # Created by Ninad Adhav
 # Email - ninad.adhav@oracle.com
 
-function LogMsg {
+LogMsg(){
         local log=$1
         local msg=$2
         local pid=$$
