@@ -31,69 +31,16 @@ y1=${#y[@]}
 z=(`cat /home/opc/parsed_file.csv | cut -d"," -f2-3 | sed -e "s/ /-/g" | sed -e "s/,/-/g"`)
 z1=${#z[@]}
 
-read -p 'Enter Directoy path where Tar Files will be placed: ' tmp_directory
-
 for ((i=0,j=0,k=0 ; i<${x1},j<${y1},k<${z1} ; i++,j++,k++));
   do
     test=$(echo "${y[$i]}" | sed -e "s/-/ /g")
-    ssh  -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${x[$i]} "mkdir -p $tmp_directory;
-    cd $tmp_directory;
+    ssh  -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${x[$i]} "mkdir -p /home/opc/ocs_migrations;
+    cd /home/opc/ocs_migrations;
     echo $test;
     tar -cvPf ${z[$i]}.tar.gz $test && echo DONE;
-    oci os object put -bn ninad --file $tmp_directory/${z[$i]}.tar.gz; bash"
+    oci os object put -bn ninad --file /home/opc/ocs_migrations/${z[$i]}.tar.gz; bash"
   done
 }
 
-
-new_old_bucket(){
-echo
-read -p 'Do you want to create a new Bucket for File Upload ?...enter Yes to create or No to use an existing Bucket.. :  ' response
-echo
-
-if [[ $response =~ ^([yY][eE][sS]|[yY])$ ]]
- then
-     echo Creating a new Bucket for transfering the TAR Files...
-     read -p 'Enter a name for the Bucket : ' bucketname
-     read -p 'Enter the Compartment OCID where you want to create the new Bucket : ' compartment_ocid
-     echo Creating a new Bucket...
-     echo
-     oci os bucket create --name $bucketname --compartment-id $compartment_ocid
-     echo Bucket $bucketname has been created in the $compartment_ocid compartment
-     read -p 'Enter the directoy path of the files to be uploaded : ' path_file
-     pathfile=`ls $path_file`
-     for file in $pathfile
-     do
-       echo Uploading $file
-       oci os object put -bn $bucketname --file $path_file/$file
-       echo
-     done
- else
-     echo Using existing Bucket for tar uploads...
-     read -p 'Enter the name of existing Bucket on OCI : ' existing_bucket
-     read -p 'Enter the directoy path of the files to be uploaded : ' path_file
-     oci os bucket get -bn $existing_bucket 2>error.log
-     x=`grep -w ServiceError error.log`
-     if [[ $x == *"ServiceError"* ]]; then
-       echo ___________________________________________________________________________________________________________
-       echo
-       echo "Bucket Does Not Exist !!! Please Check if you typed the name correctly and if the bucket exists on OCI..."
-       echo ___________________________________________________________________________________________________________
-       echo
-       new_old_bucket
-     else
-       echo "Found Bucket $existing_bucket ...proceding with file upload"
-     fi
-     pathfile=`ls $path_file`
-     for file in $pathfile
-     do
-       echo Uploading $file
-       oci os object put -bn $existing_bucket --file $path_file/$file
-       sleep 1
-       echo
-     done
-    fi
-}
-
-
 input_csv
-new_old_bucket
+
