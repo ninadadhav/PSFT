@@ -1,6 +1,6 @@
 Pre-requsites for the TAR to work
 1. OCI-CLI to be installed on all Source and Target Servers
-2. Bucket created in the Client Tennancy by the name "OCS_Migration"
+2. Bucket created in the Client Tennancy by the name "OCS_Migration" with appropriate permissions to write and read.
 3. Enough Space equal to the size of all file to be TAR'd somewhere to store the TAR Files before they are moved to Object Storage
 4. SSH Conectivity from Soar Server to all Source and Target Servers using common key.
 5. Sudo privelages for the Oracle User where all tasks will be performed from.
