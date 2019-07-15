@@ -1,4 +1,22 @@
 #!/bin/bash
+# Created by Ninad Adhav
+# Email - ninad.adhav@oracle.com
+
+function LogMsg {
+        local log=$1
+        local msg=$2
+        local pid=$$
+        local now=$(date +'%s')
+        local stamp=$(date --date "@${now}" +'%Y/%m/%d %H:%M:%S')
+        echo "${stamp}-${pid}-${msg}" >>$log
+}
+
+CreateLog(){
+        file=$1
+        [ ! -e ${file} ] && touch $file
+        sudo chmod a+rw $file
+        sudo chown opc:opc $file
+}
 
 input_csv(){
 echo Enter the path to the Input CSV File...
@@ -41,6 +59,9 @@ for ((i=0,j=0,k=0 ; i<${x1},j<${y1},k<${z1} ; i++,j++,k++));
     oci os object put -bn ninad --file /home/opc/ocs_migrations/${z[$i]}.tar.gz; bash"
   done
 }
+
+LOGFILE=/var/log/psft/psft-$HOSTNAME.log
+CreateLog ${LOGFILE}
 
 input_csv
 
