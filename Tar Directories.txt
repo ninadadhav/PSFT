@@ -1,4 +1,7 @@
 #!/bin/bash
+# Created by Ninad Adhav
+# Email : ninad.adhav@oracle.com
+
 input_csv(){
 echo Enter the path to the Input CSV File...
 read -p 'Input Path Here and press Enter : ' inputpath
