@@ -57,7 +57,7 @@ for ((i=0,j=0,k=0 ; i<${x1},j<${y1},k<${z1} ; i++,j++,k++));
        echo Current Directories being Archived and Compressed are : $test;
        ssh  -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${x[$i]} "mkdir -p /home/opc/ocs_migrations;
        cd /home/opc/ocs_migrations;
-       tar -cvPf ${z[$i]}.tar.gz --totals $test && echo DONE; bash" >> /var/log/psft-$HOSTNAME.log
+       tar -cvpPf ${z[$i]}.tar.gz --totals $test && echo DONE; bash" >> /var/log/psft-$HOSTNAME.log
        sudo scp -i /home/opc/keys/ocs_key opc@${x[$i]}:/home/opc/ocs_migrations/${z[$i]}.tar.gz /home/opc/ocs_migrations
        echo
        oci os object put -bn OCS_Migrations --file /home/opc/ocs_migrations/${z[$i]}.tar.gz
