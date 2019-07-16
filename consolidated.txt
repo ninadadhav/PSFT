@@ -23,7 +23,7 @@ echo Enter the path to the Input CSV File...
 read -p 'Input Path to the file and press Enter : ' inputpath
 if [[ -f $inputpath ]]
    then
-       LogMsg $LOGFILE "File found...proceeding to Tar Process" 
+       LogMsg $LOGFILE "File found...proceeding to Tar Process"
    else
        echo CSV File does not exist at $inputpath ....Exiting !!!
        LogMsg $LOGFILE "CSV File does not exist at $inputpath ....Exiting !!!"
@@ -32,8 +32,9 @@ if [[ -f $inputpath ]]
 fi
 sed -n '2,$p' <$inputpath > parsed_file.csv
 LogMsg $LOGFILE "Installing Dos2unix Package for File conversion"
-sudo yum install -q -y dos2unix > /var/log/psft/psft-$HOSTNAME.log && dos2unix -q parsed_file.csv
+sudo yum install -q -y dos2unix > /var/log/psft-$HOSTNAME.log && dos2unix -q parsed_file.csv
 echo
+sudo mkdir -p /home/opc/ocs_migrations
 echo "Following are the Source IP's  mentioned in the Load Sheet"
 cat parsed_file.csv | cut -d"," -f2
 echo
@@ -53,11 +54,13 @@ z1=${#z[@]}
 for ((i=0,j=0,k=0 ; i<${x1},j<${y1},k<${z1} ; i++,j++,k++));
     do
        test=$(echo "${y[$i]}" | sed -e "s/-/ /g")
+       echo Current Directories being Archived and Compressed are : $test;
        ssh  -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${x[$i]} "mkdir -p /home/opc/ocs_migrations;
        cd /home/opc/ocs_migrations;
-       echo $test;
-       tar -cvPf ${z[$i]}.tar.gz --totals $test && echo DONE;
-       oci os object put -bn OCS_Migrations --file /home/opc/ocs_migrations/${z[$i]}.tar.gz; bash"
+       tar -cvPf ${z[$i]}.tar.gz --totals $test && echo DONE; bash" >> /var/log/psft-$HOSTNAME.log
+       sudo scp -i /home/opc/keys/ocs_key opc@${x[$i]}:/home/opc/ocs_migrations/${z[$i]}.tar.gz /home/opc/ocs_migrations
+       echo
+       oci os object put -bn OCS_Migrations --file /home/opc/ocs_migrations/${z[$i]}.tar.gz
        LogMsg $LOGFILE "File ${z[$i]}.tar.gz has been uploaded to OCS_MIgrations Bucket on Object Storage"
     done
 }
@@ -66,4 +69,4 @@ LOGFILE=/var/log/psft-$HOSTNAME.log
 CreateLog ${LOGFILE}
 
 input_csv
-
+loop
