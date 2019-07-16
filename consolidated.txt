@@ -56,13 +56,13 @@ for ((i=0,j=0,k=0 ; i<${x1},j<${y1},k<${z1} ; i++,j++,k++));
        ssh  -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${x[$i]} "mkdir -p /home/opc/ocs_migrations;
        cd /home/opc/ocs_migrations;
        echo $test;
-       tar -cvPf ${z[$i]}.tar.gz $test && echo DONE;
+       tar -cvPf ${z[$i]}.tar.gz --totals $test && echo DONE;
        oci os object put -bn OCS_Migrations --file /home/opc/ocs_migrations/${z[$i]}.tar.gz; bash"
        LogMsg $LOGFILE "File ${z[$i]}.tar.gz has been uploaded to OCS_MIgrations Bucket on Object Storage"
     done
 }
 
-LOGFILE=/var/log/psft/psft-$HOSTNAME.log
+LOGFILE=/var/log/psft-$HOSTNAME.log
 CreateLog ${LOGFILE}
 
 input_csv
