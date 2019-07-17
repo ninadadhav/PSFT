@@ -1,0 +1,33 @@
+LogMsg(){
+        local log=$1
+        local msg=$2
+        local pid=$$
+        local now=$(date +'%s')
+        local stamp=$(date --date "@${now}" +'%Y/%m/%d %H:%M:%S')
+        echo "${stamp}-${pid}-${msg}" >>$log
+}
+
+CreateLog(){
+        file=$1
+        [ ! -e ${file} ] && touch $file
+        sudo chmod a+rw $file
+        sudo chown opc:opc $file
+}
+
+input_csv(){
+echo Enter the path to the Input CSV File...
+read -p 'Input Path to the file and press Enter : ' inputpath
+if [[ -f $inputpath ]]
+   then
+       LogMsg $LOGFILE "File found...proceeding to Tar Process"
+   else
+       echo CSV File does not exist at $inputpath ....Exiting !!!
+       LogMsg $LOGFILE "CSV File does not exist at $inputpath ....Exiting !!!"
+       echo
+       exit 1
+fi
+sed -n '2,$p' <$inputpath > parsed_file.csv
+LogMsg $LOGFILE "Installing Dos2unix Package for File conversion"
+in=$(sudo yum install -q -y dos2unix && dos2unix -q parsed_file.csv)
+LogMsg $LOGFILE "'$in'"
+echo
