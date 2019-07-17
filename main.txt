@@ -43,7 +43,7 @@ if [[ -d $mountpoint2 ]];
   then
      LogMsg $LOGFILE "Directory $mountpoint2 found...proceeding"
   else
-     echo SOURCE NAS DIRECTORY DOES NOT EXIST...EXITING !!
+     echo SOURCE NAS DIRECTORY $mountpoint2 DOES NOT EXIST...EXITING !!
      LogMsg $LOGFILE "SOURCE NAS DIRECTORY $mountpoint2 DOES NOT EXIST...EXITING !!"
      exit 1
 fi
