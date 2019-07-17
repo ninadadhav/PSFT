@@ -54,3 +54,18 @@ for ((u=0,v=0 ; u<${a1},v<${b1} ; u++,v++));
        LogMsg $LOGFILE "----------------- TAR PROCESS COMPLETE...CHECK LOG FILE AT $LOGFILE FOR ANY ERRORS--------------"
     done
 }
+
+
+LOGFILE=/var/log/psft-$HOSTNAME.log
+CreateLog ${LOGFILE}
+echo LOF FILE IS PRESENT AT $LOGFILE
+
+input_csv
+tar1
+upload2obj
+untar2
+cat output.txt
+echo ________________________________________________________________
+echo
+echo PROCESS COMPLETE...CHECK IF TARGET DIRECTORIES HAVE BEEN CREATED
+echo ________________________________________________________________
