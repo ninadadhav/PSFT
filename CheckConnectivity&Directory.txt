@@ -1,3 +1,5 @@
+#!/bin/bash
+
 LogMsg(){
         local log=$1
         local msg=$2
