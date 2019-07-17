@@ -43,7 +43,7 @@ if [[ -d $mountpoint2 ]];
   then
      LogMsg $LOGFILE "Directory $mountpoint2 found...proceeding"
   else
-     echo SOURCE NAS DIRECTORY $mountpoint2 DOES NOT EXIST...EXITING !!
+     echo SOURCE NAS DIRECTORY DOES NOT EXIST...EXITING !!
      LogMsg $LOGFILE "SOURCE NAS DIRECTORY $mountpoint2 DOES NOT EXIST...EXITING !!"
      exit 1
 fi
@@ -116,6 +116,29 @@ for ((u=0,v=0 ; u<${a1},v<${b1} ; u++,v++));
     done
 }
 
+untar2(){
+cd /home/opc
+a=(`cat parsed_file.csv | cut -d"," -f1`)
+a1=${#a[@]}
+b=(`cat /home/opc/parsed_file.csv | cut -d"," -f2-3 | sed -e "s/ /-/g" | sed -e "s/,/-/g"`)
+b1=${#b[@]}
+for ((u=0,v=0 ; u<${a1},v<${b1} ; u++,v++));
+    do
+       #echo Current Directories being Archived and Compressed are : $test;
+       LogMsg $LOGFILE "----------------- CONNECTING TO TARGET ${a[$u]} --------------"
+       LogMsg $LOGFILE "----------------- DOWNLOADING ${b[$u]} FROM OBJECT STORAGE --------------"
+       ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${a[$u]} "if [ -d $mpoint2 ];
+          then
+           oci os object bulk-download -bn OCS_Migrations --prefix ${b[$u]} --download-dir $mpoint2
+           cd $mpoint2
+           tar -xpPf ${b[$u]}.tar.gz
+          else
+           echo Directory $mpoint2 for file ${b[$u]} does not exist...Exiting !!!
+           exit 1
+          fi "
+   done >> output.txt 2>&1
+}
+
 LOGFILE=/var/log/psft-$HOSTNAME.log
 CreateLog ${LOGFILE}
 echo LOF FILE IS PRESENT AT $LOGFILE
@@ -123,7 +146,8 @@ echo LOF FILE IS PRESENT AT $LOGFILE
 input_csv
 tar1
 upload2obj
-untar
+untar2
+cat output.txt
 echo ________________________________________________________________
 echo
 echo PROCESS COMPLETE...CHECK IF TARGET DIRECTORIES HAVE BEEN CREATED
