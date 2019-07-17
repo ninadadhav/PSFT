@@ -31,3 +31,26 @@ LogMsg $LOGFILE "Installing Dos2unix Package for File conversion"
 in=$(sudo yum install -q -y dos2unix && dos2unix -q parsed_file.csv)
 LogMsg $LOGFILE "'$in'"
 echo
+
+untar(){
+cd /home/opc
+a=(`cat parsed_file.csv | cut -d"," -f1`)
+a1=${#a[@]}
+b=(`cat /home/opc/parsed_file.csv | cut -d"," -f2-3 | sed -e "s/ /-/g" | sed -e "s/,/-/g"`)
+b1=${#b[@]}
+for ((u=0,v=0 ; u<${a1},v<${b1} ; u++,v++));
+    do
+       echo Current Directories being Archived and Compressed are : $test;
+       LogMsg $LOGFILE "----------------- CONNECTING TO TARGET ${a[$u]} --------------"
+       LogMsg $LOGFILE "----------------- DOWNLOADING ${b[$u]} FROM OBJECT STORAGE --------------"
+       out=$(ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${a[$u]} "if [[ -d $mpoint2 ]]; then
+       oci os object bulk-download -bn OCS_Migrations --prefix ${b[$u]} --download-dir $mpoint2;
+       cd $mpoint2;
+       tar -xvPf ${b[$u]}.tar.gz;
+       else echo Directory $mpoint2 does not exist...Exiting !!!;
+       exit 1;
+       fi; bash")
+       LogMsg $LOGFILE "'$out'"
+       LogMsg $LOGFILE "----------------- TAR PROCESS COMPLETE...CHECK LOG FILE AT $LOGFILE FOR ANY ERRORS--------------"
+    done
+}
