@@ -16,6 +16,7 @@ CreateLog(){
         sudo chown opc:opc $file
 }
 
+
 input_csv(){
 echo Enter the path to the Input CSV File...
 read -p 'Input Path to the file and press Enter : ' inputpath
@@ -33,6 +34,28 @@ LogMsg $LOGFILE "Installing Dos2unix Package for File conversion"
 in=$(sudo yum install -q -y dos2unix && dos2unix -q parsed_file.csv)
 LogMsg $LOGFILE "'$in'"
 echo
+
+source_connectivity(){
+x=(`cat parsed_file.csv | cut -d"," -f2`)
+x1=${#x[@]}
+y=(`cat parsed_file.csv | cut -d"," -f4- | sed -e "s/,/-/g"`)
+y1=${#y[@]}
+z=(`cat /home/opc/parsed_file.csv | cut -d"," -f2-3 | sed -e "s/ /-/g" | sed -e "s/,/-/g"`)
+z1=${#z[@]}
+for ((i=0,j=0,k=0 ; i<${x1},j<${y1},k<${z1} ; i++,j++,k++));
+    do
+       LogMsg $LOGFILE "-----------------Connecting to Source ${x[$i]} --------------"
+       out1=$(ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${x[$i]} "
+       if [[ -d $mpoint2 ]]; then
+           echo
+       else 
+           echo Directory $mpoint2 does not exist on Server {x[$i]}. Please Check and re-run the code!!!;
+           exit 1;
+       fi;
+       LogMsg $LOGFILE "'$out'"
+       
+     done
+}
 
 untar(){
 cd /home/opc
