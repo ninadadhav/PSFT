@@ -38,22 +38,24 @@ echo
 source_connectivity(){
 x=(`cat parsed_file.csv | cut -d"," -f2`)
 x1=${#x[@]}
-y=(`cat parsed_file.csv | cut -d"," -f4- | sed -e "s/,/-/g"`)
-y1=${#y[@]}
-z=(`cat /home/opc/parsed_file.csv | cut -d"," -f2-3 | sed -e "s/ /-/g" | sed -e "s/,/-/g"`)
-z1=${#z[@]}
-for ((i=0,j=0,k=0 ; i<${x1},j<${y1},k<${z1} ; i++,j++,k++));
+for ((i=0 ; i<${x1} ; i++));
     do
-       LogMsg $LOGFILE "-----------------Connecting to Source ${x[$i]} --------------"
        out1=$(ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${x[$i]} "
        if [[ -d $mpoint2 ]]; then
            echo
        else 
            echo Directory $mpoint2 does not exist on Server {x[$i]}. Please Check and re-run the code!!!;
-           exit 1;
-       fi;
+       fi;"
        LogMsg $LOGFILE "'$out'"
-       
+       echo ${out1}
+       if [[ "${out1}" == *"does not exist on Server"* ]]; then
+              echo $mpoint2 does not exist on the above Source Servers.. Please Check...Exiting
+              LogMsg $LOGFILE "$mpoint2 does not exist on the above Source Servers"
+              exit 1
+        else
+              echo $mpoint2 is Present on all Source Servers..Proceeding
+              LogMsg $LOGFILE "$mpoint2 is Present on all Source Servers..Proceeding"
+        fi
      done
 }
 
