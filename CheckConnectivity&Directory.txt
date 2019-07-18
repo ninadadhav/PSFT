@@ -45,9 +45,9 @@ if [[ -d $mpoint2 ]];
   then
      LogMsg $LOGFILE "Directory $mpoint2 found on SOAR VM...proceeding"
   else
-     echo ****************************************************************
-     echo * SOURCE NAS DIRECTORY DOES NOT EXIST ON SOAR VM...EXITING !!  *
-     echo ****************************************************************
+     echo "****************************************************************"
+     echo "* SOURCE NAS DIRECTORY DOES NOT EXIST ON SOAR VM...EXITING !!  *"
+     echo "****************************************************************"
      LogMsg $LOGFILE "NAS DIRECTORY $mpoint2 DOES NOT EXIST on SOAR VM...EXITING !!"
      exit 1
 fi
@@ -203,8 +203,11 @@ for ((i=0,j=0,k=0 ; i<${x1},j<${y1},k<${z1} ; i++,j++,k++));
        echo
        LogMsg $LOGFILE "'$tar11'"
        LogMsg $LOGFILE "----------------- TAR PROCESS COMPLETE FOR $test --------------"
+       echo "Tar Process Complete for $test"
+       echo
     done
     echo "'$tar11'"
+    echo
 }
 
 upload2obj(){
@@ -213,11 +216,14 @@ for file in `ls $mpoint2`;
   do
       LogMsg $LOGFILE "Starting Upload of File $file to the OCS_MIgrations Bucket on OCI Object Storage"
       echo "Starting Upload of File $file to the OCS_MIgrations Bucket on OCI Object Storage"
+      echo
       upload=$(oci os object put -bn OCS_Migrations --file $file)
       echo "$upload"
       LogMsg $LOGFILE "'$upload'"
       LogMsg $LOGFILE "File $file has been uploaded to the OCS_MIgrations Bucket on OCI Object Storage"
+      echo
       echo "File $file has been uploaded to the OCS_MIgrations Bucket on OCI Object Storage"
+      echo
       sleep 1
   done
 }
@@ -226,8 +232,9 @@ downloadfromobjstorage(){
 cd /home/opc
 for ipaddress in $(cat parsed_file.csv | awk 'NR==1 {print $1}' | cut -d"," -f1)
     do
-        echo "----------------- CONNECTING TO TARGET $ipaddress --------------"
-        echo "----------------- DOWNLOADING FILES FROM OBJECT STORAGE --------------"
+        echo "CONNECTING TO TARGET $ipaddress"
+        echo
+        echo " DOWNLOADING FILES FROM OBJECT STORAGE"
         LogMsg $LOGFILE "----------------- CONNECTING TO TARGET $ipaddress --------------"
         LogMsg $LOGFILE "----------------- DOWNLOADING FILES FROM OBJECT STORAGE --------------"
         dwnldobj=$(ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@$ipaddress "
@@ -235,7 +242,7 @@ for ipaddress in $(cat parsed_file.csv | awk 'NR==1 {print $1}' | cut -d"," -f1)
         echo "'$dwnldobj'"
         LogMsg $LOGFILE "'$dwnldobj'"
         LogMsg $LOGFILE "----------------- DOWNLOAD PROCESS COMPLETE --------------"
-        echo "----------------- DOWNLOAD PROCESS COMPLETE --------------"
+        echo "--------------DOWNLOAD PROCESS COMPLETE --------------"
         sleep 1
      done
 }
@@ -249,8 +256,9 @@ b1=${#b[@]}
 for ((u=0,v=0 ; u<${a1},v<${b1} ; u++,v++));
     do
        echo "----------------- CONNECTING TO TARGET ${a[$u]} --------------"
+       echo
        sleep 1
-       echo  "----------------- DOWNLOADING ${b[$u]} FROM OBJECT STORAGE --------------"
+       echo  "DOWNLOADING ${b[$u]} FROM OBJECT STORAGE"
        sleep 1
        LogMsg $LOGFILE "----------------- CONNECTING TO TARGET ${a[$u]} --------------"
        LogMsg $LOGFILE "----------------- DOWNLOADING ${b[$u]} FROM OBJECT STORAGE --------------"
@@ -259,8 +267,9 @@ for ((u=0,v=0 ; u<${a1},v<${b1} ; u++,v++));
            sudo tar -xpPf ${b[$u]}.tar.gz ")
        LogMsg $LOGFILE "'$untar11'"
        LogMsg $LOGFILE "----------------- UNTAR PROCESS COMPLETE FOR $test --------------"
-       echo "'$untar11'"
-       echo "----------------- UNTAR PROCESS COMPLETE FOR $test --------------"
+       echo ${"untar11"}
+       echo
+       echo "UNTAR PROCESS COMPLETE FOR $test"
    done
 }
 
@@ -284,7 +293,6 @@ mountpoint2=${mountpoint1%/}
 
 read_values
 sleep 1
-echo
 
 soarvm_directory
 sleep 1
@@ -302,7 +310,7 @@ upload2obj
 downloadfromobjstorage
 untar
 echo
-echo ___________________________________
-echo COMPLETED
-echo ___________________________________
+echo "**********************************"
+echo PROCESS SUCCESSFULLY COMPLETED
+echo "***********************************"
 echo
