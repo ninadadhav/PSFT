@@ -313,4 +313,5 @@ echo
 echo "**********************************"
 echo PROCESS SUCCESSFULLY COMPLETED
 echo "***********************************"
+rm -rf final1.log final.log source_servers.log target_servers.log
 echo
