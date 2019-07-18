@@ -96,16 +96,57 @@ for f in $(cat parsed_file.csv | cut -d"," -f2);
 target_connectivity(){
 for g in $(cat parsed_file.csv | cut -d"," -f1);
   do
-    ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@$g "
-    if [[ -d $mountpoint2 ]]; then
-       echo Directory $g Found
+    status1=$(ssh -q -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=5 -i /home/opc/keys/ocs_key opc@$g echo ok 2>&1)
+    if [[ $status1 == ok ]] ; then
+          echo Connectivity Established to $g !!
+          echo "Checking if $mountpoint2 is present on $g"
+          ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@$g "
+          if [[ -d $mountpoint2 ]]; then
+              echo Directory is Present at $g
+          else
+              echo Directory $mountpoint2 DOES NOT EXIST on Server $g Please Check and re-run the code!!!
+          fi" 1>target_servers.txt
+
+          target_out=`cat /home/opc/target_servers.txt`
+          if [[ "${target_out}" == *"DOES NOT EXIST"* ]]; then
+              echo "*********************************************************************************************************"
+              echo "ERROR FOUND ------------> Directory $mountpoint2 DOES NOT EXIST on Server $g"
+              echo "*********************************************************************************************************"
+              echo
+          else
+              echo "Directory $mountpoint2 present"
+              echo
+          fi
+
+    elif [[ $status1 == "Permission denied"* ]] ; then
+       echo "*************************************************************************************************************************"
+       echo Permission Denied...Please check the ssh configuration of the Target Server
+       echo "Cannot determine if $mountpoint2 is present on Source $g. Fix connectivity issue and run again "
+       echo "*************************************************************************************************************************"
     else
-      echo
-      echo Directory $mountpoint2 DOES NOT EXIST on Server $f.... Please correct and re-run !!!
-      echo
-      exit 1
-    fi" 1>>target_servers.txt &
- done
+       echo "*************************************************************************************************************************"
+       echo Incorrect Authentication..Please check the IP Address and Key provided in the path to the Target Server.
+       echo "Cannot determine if $mountpoint2 is present on Source $g . Fix connectivity issue and run again "
+       echo "*************************************************************************************************************************"
+    fi >>final1.log
+    sleep 1
+   done
+   cat final1.log
+   final1=`cat /home/opc/final1.log`
+   if [[ "${final1}" == *"DOES NOT EXIST"* ]]; then
+              echo ____________________________________________________________________________________________
+              echo
+              echo "One or more Errors have been found and highlighted above...Please fix and rerun...EXITING"
+              echo ____________________________________________________________________________________________
+              echo
+              exit 1
+   else
+              echo _________________________________________________________
+              echo
+              echo "NO ERRORS FOUND.........PROCEEDING"
+              echo _________________________________________________________
+   fi
+
 }
 
 LOGFILE=/var/log/psft-$HOSTNAME.log
@@ -118,21 +159,20 @@ echo
 mpoint1=$mpoint
 mpoint2=${mpoint1%/}
 
-#read -p 'Enter Mount Point Directory Path for Target Servers: ' mountpoint
-#echo
-#mountpoint1=$mountpoint
-#mountpoint2=${mountpoint1%/}
-
+read -p 'Enter Mount Point Directory Path for Target Servers: ' mountpoint
+echo
+mountpoint1=$mountpoint
+mountpoint2=${mountpoint1%/}
 
 source_connectivity
 sleep 1
 echo
-#cat source_servers.txt
-LogMsg $LOGFILE "$(cat source_servers.txt)"
 
-#target_connectivity
-#sleep 1
-#cat target_connectivity.txt
-#LogMsg $LOGFILE "$(cat target_servers.txt)"
+target_connectivity
+sleep 1
 
+echo
+echo ___________________________________
 echo COMPLETED
+echo ___________________________________
+echo
