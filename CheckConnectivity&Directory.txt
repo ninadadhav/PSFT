@@ -34,65 +34,105 @@ LogMsg $LOGFILE "Installing Dos2unix Package for File conversion"
 in=$(sudo yum install -q -y dos2unix && dos2unix -q parsed_file.csv)
 LogMsg $LOGFILE "'$in'"
 echo
+}
+
 
 source_connectivity(){
-x=(`cat parsed_file.csv | cut -d"," -f2`)
-x1=${#x[@]}
-for ((i=0 ; i<${x1} ; i++));
-    do
-       out1=$(ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${x[$i]} "
-       if [[ -d $mpoint2 ]]; then
-           echo
-       else 
-           echo Directory $mpoint2 does not exist on Server {x[$i]}. Please Check and re-run the code!!!;
-       fi;"
-       LogMsg $LOGFILE "'$out'"
-       echo ${out1}
-       if [[ "${out1}" == *"does not exist on Server"* ]]; then
-              echo $mpoint2 does not exist on the above Source Servers.. Please Check...Exiting
-              LogMsg $LOGFILE "$mpoint2 does not exist on the above Source Servers"
+for f in $(cat parsed_file.csv | cut -d"," -f2);
+  do
+    status=$(ssh -q -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=5 -i /home/opc/keys/ocs_key opc@$f echo ok 2>&1)
+    if [[ $status == ok ]] ; then
+          echo Connectivity Established to $f !!
+          echo "Checking if $mpoint2 is present on $f"
+          ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@$f "
+          if [[ -d $mpoint2 ]]; then
+              echo Directory is Present at $f
+          else
+              echo Directory $mpoint2 DOES NOT EXIST on Server $f Please Check and re-run the code!!!
+          fi" 1>source_servers.txt
+
+          source_out=`cat /home/opc/source_servers.txt`
+          if [[ "${source_out}" == *"DOES NOT EXIST"* ]]; then
+              echo "*********************************************************************************************************"
+              echo "ERROR FOUND ------------> Directory $mpoint2 DOES NOT EXIST on Server $f"
+              echo "*********************************************************************************************************"
+              echo
+          else
+              echo "Directory $mpoint2 present"
+              echo
+          fi
+
+    elif [[ $status == "Permission denied"* ]] ; then
+       echo "*************************************************************************************************************************"
+       echo Permission Denied...Please check the ssh configuration of the Target Server
+       echo "Cannot determine if $mpoint2 is present on Source $f. Fix connectivity issue and run again "
+       echo "*************************************************************************************************************************"
+    else
+       echo "*************************************************************************************************************************"
+       echo Incorrect Authentication..Please check the IP Address and Key provided in the path to the Target Server.
+       echo "Cannot determine if $mpoint2 is present on Source $f . Fix connectivity issue and run again "
+       echo "*************************************************************************************************************************"
+    fi >>final.log
+    sleep 1
+   done
+   cat final.log
+   final=`cat /home/opc/final.log`
+   if [[ "${final}" == *"DOES NOT EXIST"* ]]; then
+              echo ____________________________________________________________________________________________
+              echo
+              echo "One or more Errors have been found and highlighted above...Please fix and rerun...EXITING"
+              echo ____________________________________________________________________________________________
+              echo
               exit 1
-        else
-              echo $mpoint2 is Present on all Source Servers..Proceeding
-              LogMsg $LOGFILE "$mpoint2 is Present on all Source Servers..Proceeding"
-        fi
-     done
+   else
+              echo _________________________________________________________
+              echo
+              echo "NO ERRORS FOUND.........PROCEEDING"
+              echo _________________________________________________________
+   fi
+
 }
 
-untar(){
-cd /home/opc
-a=(`cat parsed_file.csv | cut -d"," -f1`)
-a1=${#a[@]}
-b=(`cat /home/opc/parsed_file.csv | cut -d"," -f2-3 | sed -e "s/ /-/g" | sed -e "s/,/-/g"`)
-b1=${#b[@]}
-for ((u=0,v=0 ; u<${a1},v<${b1} ; u++,v++));
-    do
-       echo Current Directories being Archived and Compressed are : $test;
-       LogMsg $LOGFILE "----------------- CONNECTING TO TARGET ${a[$u]} --------------"
-       LogMsg $LOGFILE "----------------- DOWNLOADING ${b[$u]} FROM OBJECT STORAGE --------------"
-       out=$(ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${a[$u]} "if [[ -d $mpoint2 ]]; then
-       oci os object bulk-download -bn OCS_Migrations --prefix ${b[$u]} --download-dir $mpoint2;
-       cd $mpoint2;
-       tar -xvPf ${b[$u]}.tar.gz;
-       else echo Directory $mpoint2 does not exist...Exiting !!!;
-       exit 1;
-       fi; bash")
-       LogMsg $LOGFILE "'$out'"
-       LogMsg $LOGFILE "----------------- TAR PROCESS COMPLETE...CHECK LOG FILE AT $LOGFILE FOR ANY ERRORS--------------"
-    done
+target_connectivity(){
+for g in $(cat parsed_file.csv | cut -d"," -f1);
+  do
+    ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@$g "
+    if [[ -d $mountpoint2 ]]; then
+       echo Directory $g Found
+    else
+      echo
+      echo Directory $mountpoint2 DOES NOT EXIST on Server $f.... Please correct and re-run !!!
+      echo
+      exit 1
+    fi" 1>>target_servers.txt &
+ done
 }
-
 
 LOGFILE=/var/log/psft-$HOSTNAME.log
 CreateLog ${LOGFILE}
-echo LOF FILE IS PRESENT AT $LOGFILE
-
 input_csv
-tar1
-upload2obj
-untar2
-cat output.txt
-echo ________________________________________________________________
+rm -rf /home/opc/source_servers.txt /home/opc/target_servers.txt /home/opc/final.log
+
+read -p 'Enter Mount Point Directory Path for Source Servers: ' mpoint
 echo
-echo PROCESS COMPLETE...CHECK IF TARGET DIRECTORIES HAVE BEEN CREATED
-echo ________________________________________________________________
+mpoint1=$mpoint
+mpoint2=${mpoint1%/}
+
+#read -p 'Enter Mount Point Directory Path for Target Servers: ' mountpoint
+#echo
+#mountpoint1=$mountpoint
+#mountpoint2=${mountpoint1%/}
+
+
+source_connectivity
+sleep 1
+echo
+#cat source_servers.txt
+LogMsg $LOGFILE "$(cat source_servers.txt)"
+
+#target_connectivity
+#sleep 1
+#cat target_connectivity.txt
+#LogMsg $LOGFILE "$(cat target_servers.txt)"
+
+echo COMPLETED
