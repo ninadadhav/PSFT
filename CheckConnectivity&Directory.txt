@@ -42,6 +42,8 @@ echo
 
 
 source_connectivity(){
+echo "Checking Source Server Connectivity..."
+echo
 for f in $(cat parsed_file.csv | cut -d"," -f2);
   do
     status=$(ssh -q -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=5 -i /home/opc/keys/ocs_key opc@$f echo ok 2>&1)
@@ -67,15 +69,19 @@ for f in $(cat parsed_file.csv | cut -d"," -f2);
           fi
 
     elif [[ $status == "Permission denied"* ]] ; then
+       echo "Establishing Connection to $f"
        echo "*************************************************************************************************************************"
-       echo Permission Denied...Please check the ssh configuration of the Target Server
+       echo ERROR --------> Permission Denied...Please check the ssh configuration of the Source Server $f
+       echo
        echo "Cannot determine if $mpoint2 is present on Source $f. Fix connectivity issue and run again "
        echo "*************************************************************************************************************************"
     else
-       echo "*************************************************************************************************************************"
-       echo Incorrect Authentication..Please check the IP Address and Key provided in the path to the Target Server.
+       echo "Establishing Connection to $f"
+       echo "*********************************************************************************************************************************************"
+       echo ERROR --------> Incorrect Authentication..Please check the IP Address and Key provided in the path to the Source Server $f.
+       echo
        echo "Cannot determine if $mpoint2 is present on Source $f . Fix connectivity issue and run again "
-       echo "*************************************************************************************************************************"
+       echo "*********************************************************************************************************************************************"
     fi >>final.log
     sleep 1
    done
@@ -98,6 +104,8 @@ for f in $(cat parsed_file.csv | cut -d"," -f2);
 }
 
 target_connectivity(){
+echo "Checking Target Server Connectivity..."
+echo
 for g in $(cat parsed_file.csv | cut -d"," -f1);
   do
     status1=$(ssh -q -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=5 -i /home/opc/keys/ocs_key opc@$g echo ok 2>&1)
@@ -123,13 +131,16 @@ for g in $(cat parsed_file.csv | cut -d"," -f1);
           fi
 
     elif [[ $status1 == "Permission denied"* ]] ; then
+       echo "Establishing Connection to $g"
        echo "*************************************************************************************************************************"
-       echo Permission Denied...Please check the ssh configuration of the Target Server
+       echo ERROR ---------> Permission Denied...Please check the ssh configuration of the Target Server $g
+       echo
        echo "Cannot determine if $mountpoint2 is present on Source $g. Fix connectivity issue and run again "
        echo "*************************************************************************************************************************"
     else
        echo "*************************************************************************************************************************"
-       echo Incorrect Authentication..Please check the IP Address and Key provided in the path to the Target Server.
+       echo ERROR ----------> Incorrect Authentication..Please check the IP Address and Key provided in the path to the Target Server $g.
+       echo 
        echo "Cannot determine if $mountpoint2 is present on Source $g . Fix connectivity issue and run again "
        echo "*************************************************************************************************************************"
     fi >>final1.log
