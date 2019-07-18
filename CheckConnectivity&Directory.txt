@@ -193,6 +193,7 @@ for ((i=0,j=0,k=0 ; i<${x1},j<${y1},k<${z1} ; i++,j++,k++));
        LogMsg $LOGFILE "'$tar11'"
        LogMsg $LOGFILE "----------------- TAR PROCESS COMPLETE FOR $test --------------"
     done
+    echo "'$tar11'"
 }
 
 upload2obj(){
@@ -200,10 +201,12 @@ cd $mpoint2
 for file in `ls $mpoint2`;
   do
       LogMsg $LOGFILE "Starting Upload of File $file to the OCS_MIgrations Bucket on OCI Object Storage"
-      upload=$(oci os object put -bn OCS_Migrations --file $file) &
+      upload=$(oci os object put -bn OCS_Migrations --file $file)
       echo "$upload"
       LogMsg $LOGFILE "'$upload'"
       LogMsg $LOGFILE "File $file has been uploaded to the OCS_MIgrations Bucket on OCI Object Storage"
+      echo "File $file has been uploaded to the OCS_MIgrations Bucket on OCI Object Storage"
+      sleep 1
   done
 }
 
@@ -211,6 +214,8 @@ downloadfromobjstorage(){
 cd /home/opc
 for ipaddress in $(cat parsed_file.csv | awk 'NR==1 {print $1}' | cut -d"," -f1)
     do
+        echo "----------------- CONNECTING TO TARGET $ipaddress --------------"
+        echo "----------------- DOWNLOADING FILES FROM OBJECT STORAGE --------------"
         LogMsg $LOGFILE "----------------- CONNECTING TO TARGET $ipaddress --------------"
         LogMsg $LOGFILE "----------------- DOWNLOADING FILES FROM OBJECT STORAGE --------------"
         dwnldobj=$(ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@$ipaddress "
@@ -218,6 +223,7 @@ for ipaddress in $(cat parsed_file.csv | awk 'NR==1 {print $1}' | cut -d"," -f1)
         echo "'$dwnldobj'"
         LogMsg $LOGFILE "'$dwnldobj'"
         LogMsg $LOGFILE "----------------- DOWNLOAD PROCESS COMPLETE --------------"
+        sleep 1
      done
 }
 
@@ -229,6 +235,8 @@ b=(`cat /home/opc/parsed_file.csv | cut -d"," -f2-3 | sed -e "s/ /-/g" | sed -e 
 b1=${#b[@]}
 for ((u=0,v=0 ; u<${a1},v<${b1} ; u++,v++));
     do
+       echo "----------------- CONNECTING TO TARGET ${a[$u]} --------------"
+       echo  "----------------- DOWNLOADING ${b[$u]} FROM OBJECT STORAGE --------------"
        LogMsg $LOGFILE "----------------- CONNECTING TO TARGET ${a[$u]} --------------"
        LogMsg $LOGFILE "----------------- DOWNLOADING ${b[$u]} FROM OBJECT STORAGE --------------"
        untar11=$(ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${a[$u]} "
@@ -236,6 +244,7 @@ for ((u=0,v=0 ; u<${a1},v<${b1} ; u++,v++));
            sudo tar -xpPf ${b[$u]}.tar.gz ")
        LogMsg $LOGFILE "'$untar11'"
        LogMsg $LOGFILE "----------------- UNTAR PROCESS COMPLETE FOR $test --------------"
+       echo "'$untar11'"
    done
 }
 
