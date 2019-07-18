@@ -1,4 +1,8 @@
 #!/bin/bash
+# ***********************************
+# Created by Ninad Adhav            *
+# Email ninad.adhav@oracle.com      *
+# ***********************************
 
 LogMsg(){
         local log=$1
@@ -49,9 +53,9 @@ for f in $(cat parsed_file.csv | cut -d"," -f2);
               echo Directory is Present at $f
           else
               echo Directory $mpoint2 DOES NOT EXIST on Server $f Please Check and re-run the code!!!
-          fi" 1>source_servers.txt
+          fi" 1>source_servers.log
 
-          source_out=`cat /home/opc/source_servers.txt`
+          source_out=`cat /home/opc/source_servers.log`
           if [[ "${source_out}" == *"DOES NOT EXIST"* ]]; then
               echo "*********************************************************************************************************"
               echo "ERROR FOUND ------------> Directory $mpoint2 DOES NOT EXIST on Server $f"
@@ -105,9 +109,9 @@ for g in $(cat parsed_file.csv | cut -d"," -f1);
               echo Directory is Present at $g
           else
               echo Directory $mountpoint2 DOES NOT EXIST on Server $g Please Check and re-run the code!!!
-          fi" 1>target_servers.txt
+          fi" 1>target_servers.log
 
-          target_out=`cat /home/opc/target_servers.txt`
+          target_out=`cat /home/opc/target_servers.log`
           if [[ "${target_out}" == *"DOES NOT EXIST"* ]]; then
               echo "*********************************************************************************************************"
               echo "ERROR FOUND ------------> Directory $mountpoint2 DOES NOT EXIST on Server $g"
@@ -152,7 +156,7 @@ for g in $(cat parsed_file.csv | cut -d"," -f1);
 LOGFILE=/var/log/psft-$HOSTNAME.log
 CreateLog ${LOGFILE}
 input_csv
-rm -rf /home/opc/source_servers.txt /home/opc/target_servers.txt /home/opc/final.log
+rm -rf /home/opc/source_servers.log /home/opc/target_servers.log /home/opc/final.log /home/opc/final1.log
 
 read -p 'Enter Mount Point Directory Path for Source Servers: ' mpoint
 echo
