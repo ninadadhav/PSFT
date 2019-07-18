@@ -26,7 +26,7 @@ echo Enter the path to the Input CSV File...
 read -p 'Input Path to the file and press Enter : ' inputpath
 if [[ -f $inputpath ]]
    then
-       LogMsg $LOGFILE "File found...proceeding to Tar Process"
+       LogMsg $LOGFILE " $inputpath File found...proceeding to Tar Process"
    else
        echo CSV File does not exist at $inputpath ....Exiting !!!
        LogMsg $LOGFILE "CSV File does not exist at $inputpath ....Exiting !!!"
@@ -36,7 +36,7 @@ fi
 sed -n '2,$p' <$inputpath > parsed_file.csv
 LogMsg $LOGFILE "Installing Dos2unix Package for File conversion"
 in=$(sudo yum install -q -y dos2unix && dos2unix -q parsed_file.csv)
-LogMsg $LOGFILE "'$in'"
+LogMsg $LOGFILE "$in"
 echo
 }
 
@@ -45,14 +45,16 @@ if [[ -d $mpoint2 ]];
   then
      LogMsg $LOGFILE "Directory $mpoint2 found on SOAR VM...proceeding"
   else
-     echo SOURCE NAS DIRECTORY DOES NOT EXIST ON SOAR VM...EXITING !!
+     echo ****************************************************************
+     echo * SOURCE NAS DIRECTORY DOES NOT EXIST ON SOAR VM...EXITING !!  *
+     echo ****************************************************************
      LogMsg $LOGFILE "NAS DIRECTORY $mpoint2 DOES NOT EXIST on SOAR VM...EXITING !!"
      exit 1
 fi
 }
 
 source_connectivity(){
-echo "Checking Source Server Connectivity..."
+echo "Checking Source Servers Connectivity..."
 echo
 for f in $(cat parsed_file.csv | cut -d"," -f2);
   do
@@ -70,7 +72,7 @@ for f in $(cat parsed_file.csv | cut -d"," -f2);
           source_out=`cat /home/opc/source_servers.log`
           if [[ "${source_out}" == *"DOES NOT EXIST"* ]]; then
               echo "*********************************************************************************************************"
-              echo "ERROR FOUND ------------> Directory $mpoint2 DOES NOT EXIST on Server $f"
+              echo "ERROR FOUND ------------> Directory $mpoint2 DOES NOT EXIST on Source Server $f"
               echo "*********************************************************************************************************"
               echo
           else
@@ -103,12 +105,16 @@ for f in $(cat parsed_file.csv | cut -d"," -f2);
               echo "One or more Errors have been found and highlighted above...Please fix and rerun...EXITING"
               echo ____________________________________________________________________________________________
               echo
+              LogMsg $LOGFILE "`cat final.log`"
+              LogMsg $LOGFILE "One or more Errors have been found and highlighted above...Please fix and rerun...EXITING"
               exit 1
    else
               echo _________________________________________________________
               echo
               echo "NO ERRORS FOUND.........PROCEEDING"
               echo _________________________________________________________
+              LogMsg $LOGFILE "`cat final.log`"
+              LogMsg $LOGFILE "NO ERRORS FOUND.........PROCEEDING"
    fi
 
 }
@@ -157,12 +163,15 @@ for g in $(cat parsed_file.csv | cut -d"," -f1);
     sleep 1
    done
    cat final1.log
+   
    final1=`cat /home/opc/final1.log`
    if [[ "${final1}" == *"DOES NOT EXIST"* ]]; then
               echo ____________________________________________________________________________________________
               echo
               echo "One or more Errors have been found and highlighted above...Please fix and rerun...EXITING"
               echo ____________________________________________________________________________________________
+              LogMsg $LOGFILE "`cat final1.log`"
+              LogMsg $LOGFILE "One or more Errors have been found and highlighted above...Please fix and rerun...EXITING"
               echo
               exit 1
    else
@@ -170,6 +179,8 @@ for g in $(cat parsed_file.csv | cut -d"," -f1);
               echo
               echo "NO ERRORS FOUND.........PROCEEDING"
               echo _________________________________________________________
+              echo LogMsg $LOGFILE "`cat final1.log`"
+              LogMsg $LOGFILE "NO ERRORS FOUND.........PROCEEDING"
    fi
 
 }
@@ -201,6 +212,7 @@ cd $mpoint2
 for file in `ls $mpoint2`;
   do
       LogMsg $LOGFILE "Starting Upload of File $file to the OCS_MIgrations Bucket on OCI Object Storage"
+      echo "Starting Upload of File $file to the OCS_MIgrations Bucket on OCI Object Storage"
       upload=$(oci os object put -bn OCS_Migrations --file $file)
       echo "$upload"
       LogMsg $LOGFILE "'$upload'"
@@ -223,6 +235,7 @@ for ipaddress in $(cat parsed_file.csv | awk 'NR==1 {print $1}' | cut -d"," -f1)
         echo "'$dwnldobj'"
         LogMsg $LOGFILE "'$dwnldobj'"
         LogMsg $LOGFILE "----------------- DOWNLOAD PROCESS COMPLETE --------------"
+        echo "----------------- DOWNLOAD PROCESS COMPLETE --------------"
         sleep 1
      done
 }
@@ -236,7 +249,9 @@ b1=${#b[@]}
 for ((u=0,v=0 ; u<${a1},v<${b1} ; u++,v++));
     do
        echo "----------------- CONNECTING TO TARGET ${a[$u]} --------------"
+       sleep 1
        echo  "----------------- DOWNLOADING ${b[$u]} FROM OBJECT STORAGE --------------"
+       sleep 1
        LogMsg $LOGFILE "----------------- CONNECTING TO TARGET ${a[$u]} --------------"
        LogMsg $LOGFILE "----------------- DOWNLOADING ${b[$u]} FROM OBJECT STORAGE --------------"
        untar11=$(ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${a[$u]} "
@@ -245,6 +260,7 @@ for ((u=0,v=0 ; u<${a1},v<${b1} ; u++,v++));
        LogMsg $LOGFILE "'$untar11'"
        LogMsg $LOGFILE "----------------- UNTAR PROCESS COMPLETE FOR $test --------------"
        echo "'$untar11'"
+       echo "----------------- UNTAR PROCESS COMPLETE FOR $test --------------"
    done
 }
 
