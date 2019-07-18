@@ -40,6 +40,16 @@ LogMsg $LOGFILE "'$in'"
 echo
 }
 
+soarvm_directory{
+if [[ -d $mpoint2 ]];
+  then
+     LogMsg $LOGFILE "Directory $mpoint2 found on SOAR VM...proceeding"
+  else
+     echo SOURCE NAS DIRECTORY DOES NOT EXIST ON SOAR VM...EXITING !!
+     LogMsg $LOGFILE "NAS DIRECTORY $mpoint2 DOES NOT EXIST on SOAR VM...EXITING !!"
+     exit 1
+fi
+}
 
 source_connectivity(){
 echo "Checking Source Server Connectivity..."
@@ -164,6 +174,69 @@ for g in $(cat parsed_file.csv | cut -d"," -f1);
 
 }
 
+tar1(){
+x=(`cat parsed_file.csv | cut -d"," -f2`)
+x1=${#x[@]}
+y=(`cat parsed_file.csv | cut -d"," -f4- | sed -e "s/,/-/g"`)
+y1=${#y[@]}
+z=(`cat /home/opc/parsed_file.csv | cut -d"," -f2-3 | sed -e "s/ /-/g" | sed -e "s/,/-/g"`)
+z1=${#z[@]}
+for ((i=0,j=0,k=0 ; i<${x1},j<${y1},k<${z1} ; i++,j++,k++));
+    do
+       test=$(echo "${y[$i]}" | sed -e "s/-/ /g")
+       echo Current Directories being Archived and Compressed are : $test
+       LogMsg $LOGFILE "-----------------Connecting to Source ${x[$i]} --------------"
+       tar11=$(ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${x[$i]} "cd $mountpoint2;
+       sudo tar -cvpPf ${z[$i]}.tar.gz --totals $test && echo; bash") &
+       echo
+       LogMsg $LOGFILE "'$tar11'"
+       LogMsg $LOGFILE "----------------- TAR PROCESS COMPLETE FOR $test --------------"
+    done
+}
+
+upload2obj(){
+cd $mountpoint2
+for file in `ls $mountpoint2`;
+  do
+      LogMsg $LOGFILE "Starting Upload of File $file to the OCS_MIgrations Bucket on OCI Object Storage"
+      upload=$(oci os object put -bn OCS_Migrations --file $file) &
+      echo "$upload"
+      LogMsg $LOGFILE "'$upload'"
+      LogMsg $LOGFILE "File $file has been uploaded to the OCS_MIgrations Bucket on OCI Object Storage"
+  done
+}
+
+downloadfromobjstorage(){
+for ipaddress in $(cat parsed_file.csv | awk 'NR==1 {print $1}' | cut -d"," -f1)
+    do
+        LogMsg $LOGFILE "----------------- CONNECTING TO TARGET $ipaddress --------------"
+        LogMsg $LOGFILE "----------------- DOWNLOADING FILES FROM OBJECT STORAGE --------------"
+        dwnldobj=$(ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@$ipaddress "
+            oci os object bulk-download -bn OCS_Migrations --download-dir $mpoint2 ") &
+        echo "'$dwnldobj'"
+        LogMsg $LOGFILE "'$dwnldobj'"
+        LogMsg $LOGFILE "----------------- DOWNLOAD PROCESS COMPLETE --------------"
+}
+
+untar(){
+cd /home/opc
+a=(`cat parsed_file.csv | cut -d"," -f1`)
+a1=${#a[@]}
+b=(`cat /home/opc/parsed_file.csv | cut -d"," -f2-3 | sed -e "s/ /-/g" | sed -e "s/,/-/g"`)
+b1=${#b[@]}
+for ((u=0,v=0 ; u<${a1},v<${b1} ; u++,v++));
+    do
+       LogMsg $LOGFILE "----------------- CONNECTING TO TARGET ${a[$u]} --------------"
+       LogMsg $LOGFILE "----------------- DOWNLOADING ${b[$u]} FROM OBJECT STORAGE --------------"
+       untar11=$(ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${a[$u]} "
+           cd $mpoint2
+           tar -xpPf ${b[$u]}.tar.gz
+          fi ") &
+       LogMsg $LOGFILE "'$untar11'"
+       LogMsg $LOGFILE "----------------- UNTAR PROCESS COMPLETE FOR $test --------------"
+   done
+}
+
 LOGFILE=/var/log/psft-$HOSTNAME.log
 CreateLog ${LOGFILE}
 input_csv
@@ -179,6 +252,11 @@ echo
 mountpoint1=$mountpoint
 mountpoint2=${mountpoint1%/}
 
+
+soarvm_directory
+sleep1
+echo
+
 source_connectivity
 sleep 1
 echo
@@ -186,6 +264,10 @@ echo
 target_connectivity
 sleep 1
 
+tar1
+upload2obj
+downloadfromobjstorage
+untar
 echo
 echo ___________________________________
 echo COMPLETED
