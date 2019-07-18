@@ -230,7 +230,7 @@ for ((u=0,v=0 ; u<${a1},v<${b1} ; u++,v++));
        LogMsg $LOGFILE "----------------- DOWNLOADING ${b[$u]} FROM OBJECT STORAGE --------------"
        untar11=$(ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${a[$u]} "
            cd $mpoint2
-           tar -xpPf ${b[$u]}.tar.gz
+           sudo tar -xpPf ${b[$u]}.tar.gz
           fi ") &
        LogMsg $LOGFILE "'$untar11'"
        LogMsg $LOGFILE "----------------- UNTAR PROCESS COMPLETE FOR $test --------------"
