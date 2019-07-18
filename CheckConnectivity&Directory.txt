@@ -187,7 +187,7 @@ for ((i=0,j=0,k=0 ; i<${x1},j<${y1},k<${z1} ; i++,j++,k++));
        test=$(echo "${y[$i]}" | sed -e "s/-/ /g")
        echo Current Directories being Archived and Compressed are : $test
        LogMsg $LOGFILE "-----------------Connecting to Source ${x[$i]} --------------"
-       tar11=$(ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${x[$i]} "cd $mountpoint2;
+       tar11=$(ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${x[$i]} "cd $mpoint2;
        sudo tar -cvpPf ${z[$i]}.tar.gz --totals $test && echo; bash") &
        echo
        LogMsg $LOGFILE "'$tar11'"
@@ -196,7 +196,7 @@ for ((i=0,j=0,k=0 ; i<${x1},j<${y1},k<${z1} ; i++,j++,k++));
 }
 
 upload2obj(){
-cd $mopoint2
+cd $mpoint2
 for file in `ls $mpoint2`;
   do
       LogMsg $LOGFILE "Starting Upload of File $file to the OCS_MIgrations Bucket on OCI Object Storage"
@@ -214,7 +214,7 @@ for ipaddress in $(cat parsed_file.csv | awk 'NR==1 {print $1}' | cut -d"," -f1)
         LogMsg $LOGFILE "----------------- CONNECTING TO TARGET $ipaddress --------------"
         LogMsg $LOGFILE "----------------- DOWNLOADING FILES FROM OBJECT STORAGE --------------"
         dwnldobj=$(ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@$ipaddress "
-            oci os object bulk-download -bn OCS_Migrations --download-dir $mpoint2 ") &
+            oci os object bulk-download -bn OCS_Migrations --download-dir $mountpoint2 ") &
         echo "'$dwnldobj'"
         LogMsg $LOGFILE "'$dwnldobj'"
         LogMsg $LOGFILE "----------------- DOWNLOAD PROCESS COMPLETE --------------"
@@ -231,7 +231,7 @@ for ((u=0,v=0 ; u<${a1},v<${b1} ; u++,v++));
        LogMsg $LOGFILE "----------------- CONNECTING TO TARGET ${a[$u]} --------------"
        LogMsg $LOGFILE "----------------- DOWNLOADING ${b[$u]} FROM OBJECT STORAGE --------------"
        untar11=$(ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${a[$u]} "
-           cd $mpoint2
+           cd $mountpoint2
            sudo tar -xpPf ${b[$u]}.tar.gz
           fi ") &
        LogMsg $LOGFILE "'$untar11'"
@@ -241,6 +241,7 @@ for ((u=0,v=0 ; u<${a1},v<${b1} ; u++,v++));
 
 LOGFILE=/var/log/psft-$HOSTNAME.log
 CreateLog ${LOGFILE}
+echo "' '" > /var/log/psft-$HOSTNAME.log
 input_csv
 rm -rf /home/opc/source_servers.log /home/opc/target_servers.log /home/opc/final.log /home/opc/final1.log
 
@@ -257,11 +258,11 @@ mountpoint2=${mountpoint1%/}
 }
 
 read_values
-sleep1
+sleep 1
 echo
 
 soarvm_directory
-sleep1
+sleep 1
 echo
 
 source_connectivity
