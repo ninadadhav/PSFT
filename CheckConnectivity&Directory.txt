@@ -175,6 +175,7 @@ for g in $(cat parsed_file.csv | cut -d"," -f1);
 }
 
 tar1(){
+cd /home/opc
 x=(`cat parsed_file.csv | cut -d"," -f2`)
 x1=${#x[@]}
 y=(`cat parsed_file.csv | cut -d"," -f4- | sed -e "s/,/-/g"`)
@@ -195,8 +196,8 @@ for ((i=0,j=0,k=0 ; i<${x1},j<${y1},k<${z1} ; i++,j++,k++));
 }
 
 upload2obj(){
-cd $mountpoint2
-for file in `ls $mountpoint2`;
+cd $mopoint2
+for file in `ls $mpoint2`;
   do
       LogMsg $LOGFILE "Starting Upload of File $file to the OCS_MIgrations Bucket on OCI Object Storage"
       upload=$(oci os object put -bn OCS_Migrations --file $file) &
@@ -207,6 +208,7 @@ for file in `ls $mountpoint2`;
 }
 
 downloadfromobjstorage(){
+cd /home/opc
 for ipaddress in $(cat parsed_file.csv | awk 'NR==1 {print $1}' | cut -d"," -f1)
     do
         LogMsg $LOGFILE "----------------- CONNECTING TO TARGET $ipaddress --------------"
@@ -242,6 +244,7 @@ CreateLog ${LOGFILE}
 input_csv
 rm -rf /home/opc/source_servers.log /home/opc/target_servers.log /home/opc/final.log /home/opc/final1.log
 
+read_values(){
 read -p 'Enter Mount Point Directory Path for Source Servers: ' mpoint
 echo
 mpoint1=$mpoint
@@ -251,7 +254,11 @@ read -p 'Enter Mount Point Directory Path for Target Servers: ' mountpoint
 echo
 mountpoint1=$mountpoint
 mountpoint2=${mountpoint1%/}
+}
 
+read_values
+sleep1
+echo
 
 soarvm_directory
 sleep1
