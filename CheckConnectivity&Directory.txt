@@ -188,7 +188,7 @@ for ((i=0,j=0,k=0 ; i<${x1},j<${y1},k<${z1} ; i++,j++,k++));
        echo Current Directories being Archived and Compressed are : $test
        LogMsg $LOGFILE "-----------------Connecting to Source ${x[$i]} --------------"
        tar11=$(ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${x[$i]} "cd $mpoint2;
-       sudo tar -cvpPf ${z[$i]}.tar.gz --totals $test && echo; bash") &
+       sudo tar -cvpPf ${z[$i]}.tar.gz --totals $test && echo; bash")
        echo
        LogMsg $LOGFILE "'$tar11'"
        LogMsg $LOGFILE "----------------- TAR PROCESS COMPLETE FOR $test --------------"
@@ -214,7 +214,7 @@ for ipaddress in $(cat parsed_file.csv | awk 'NR==1 {print $1}' | cut -d"," -f1)
         LogMsg $LOGFILE "----------------- CONNECTING TO TARGET $ipaddress --------------"
         LogMsg $LOGFILE "----------------- DOWNLOADING FILES FROM OBJECT STORAGE --------------"
         dwnldobj=$(ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@$ipaddress "
-            oci os object bulk-download -bn OCS_Migrations --download-dir $mountpoint2 ") &
+            oci os object bulk-download -bn OCS_Migrations --download-dir $mountpoint2 ")
         echo "'$dwnldobj'"
         LogMsg $LOGFILE "'$dwnldobj'"
         LogMsg $LOGFILE "----------------- DOWNLOAD PROCESS COMPLETE --------------"
@@ -232,8 +232,7 @@ for ((u=0,v=0 ; u<${a1},v<${b1} ; u++,v++));
        LogMsg $LOGFILE "----------------- DOWNLOADING ${b[$u]} FROM OBJECT STORAGE --------------"
        untar11=$(ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${a[$u]} "
            cd $mountpoint2
-           sudo tar -xpPf ${b[$u]}.tar.gz
-          fi ") &
+           sudo tar -xpPf ${b[$u]}.tar.gz ")
        LogMsg $LOGFILE "'$untar11'"
        LogMsg $LOGFILE "----------------- UNTAR PROCESS COMPLETE FOR $test --------------"
    done
