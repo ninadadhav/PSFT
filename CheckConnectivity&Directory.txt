@@ -40,7 +40,7 @@ LogMsg $LOGFILE "'$in'"
 echo
 }
 
-soarvm_directory{
+soarvm_directory(){
 if [[ -d $mpoint2 ]];
   then
      LogMsg $LOGFILE "Directory $mpoint2 found on SOAR VM...proceeding"
