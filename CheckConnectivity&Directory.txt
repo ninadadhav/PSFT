@@ -218,6 +218,7 @@ for ipaddress in $(cat parsed_file.csv | awk 'NR==1 {print $1}' | cut -d"," -f1)
         echo "'$dwnldobj'"
         LogMsg $LOGFILE "'$dwnldobj'"
         LogMsg $LOGFILE "----------------- DOWNLOAD PROCESS COMPLETE --------------"
+     done
 }
 
 untar(){
