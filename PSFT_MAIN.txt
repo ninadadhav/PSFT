@@ -205,9 +205,19 @@ for ((i=0,j=0,k=0 ; i<${x1},j<${y1},k<${z1} ; i++,j++,k++));
        LogMsg $LOGFILE "----------------- TAR PROCESS COMPLETE FOR $test --------------"
        echo "Tar Process Complete for $test"
        echo
-    done
+    done 2> error.log
+    sleep 1
+    LogMsg $LOGFILE "`cat error.log`"
     echo "'$tar11'"
     echo
+    if [ -n `cat error.log` ];
+    then
+        echo `cat error.log`
+        echo "Tar Process failed...Exiting"
+        exit 1
+    else
+         break
+    fi
 }
 
 upload2obj(){
@@ -215,36 +225,41 @@ cd $mpoint2
 for file in `ls $mpoint2`;
   do
       LogMsg $LOGFILE "Starting Upload of File $file to the OCS_MIgrations Bucket on OCI Object Storage"
-      echo "Starting Upload of File $file to the OCS_MIgrations Bucket on OCI Object Storage"
+      echo "Starting Upload of File $file"
+      oci os object put -bn OCS_Migrations --file $file &
       echo
-      upload=$(oci os object put -bn OCS_Migrations --file $file)
-      echo "$upload"
-      LogMsg $LOGFILE "'$upload'"
-      LogMsg $LOGFILE "File $file has been uploaded to the OCS_MIgrations Bucket on OCI Object Storage"
-      echo
-      echo "File $file has been uploaded to the OCS_MIgrations Bucket on OCI Object Storage"
-      echo
-      sleep 1
-  done
+  done 1> upload.log 2> error.log
+  wait
+  if [[ -s error.log ]];
+        then
+          if [[ `cat error.log` == *"Error"* ]];
+               then
+                   echo "OCI Command failed...Exiting"
+                   cat error.log
+                   exit 1
+          else
+                  echo "Unknown Error...Exiting"
+                  exit 1
+          fi
+     else
+         echo "SUCCESSFULLY UPLOADED TO OBJECT STORAGE"
+         echo
+         cat upload.log
+     fi
 }
 
 downloadfromobjstorage(){
 cd /home/opc
-for ipaddress in $(cat parsed_file.csv | awk 'NR==1 {print $1}' | cut -d"," -f1)
-    do
-        echo "CONNECTING TO TARGET $ipaddress"
+        echo "CONNECTING TO TARGET $oci_target"
         echo
         echo " DOWNLOADING FILES FROM OBJECT STORAGE"
         LogMsg $LOGFILE "----------------- CONNECTING TO TARGET $ipaddress --------------"
         LogMsg $LOGFILE "----------------- DOWNLOADING FILES FROM OBJECT STORAGE --------------"
-        dwnldobj=$(ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@$ipaddress "
-            oci os object bulk-download -bn OCS_Migrations --download-dir $mountpoint2 ")
-        echo "'$dwnldobj'"
-        LogMsg $LOGFILE "'$dwnldobj'"
+        ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@$oci_target "
+            oci os object bulk-download -bn OCS_Migrations --download-dir $mountpoint2 " 1> download.log 2> error.log
         LogMsg $LOGFILE "----------------- DOWNLOAD PROCESS COMPLETE --------------"
         echo "--------------DOWNLOAD PROCESS COMPLETE --------------"
         sleep 1
-     done
 }
 
 untar(){
@@ -289,6 +304,9 @@ read -p 'Enter Mount Point Directory Path for Target Servers: ' mountpoint
 echo
 mountpoint1=$mountpoint
 mountpoint2=${mountpoint1%/}
+
+read -p 'Enter IP Address of Target Server which has OCI CLI installed in it : ' oci_target
+echo
 }
 
 read_values
