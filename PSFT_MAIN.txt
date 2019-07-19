@@ -297,9 +297,9 @@ for ((u=0,v=0 ; u<${a1},v<${b1} ; u++,v++));
        sleep 1
        LogMsg $LOGFILE "----------------- CONNECTING TO TARGET ${a[$u]} --------------"
        LogMsg $LOGFILE "----------------- DOWNLOADING ${b[$u]} FROM OBJECT STORAGE --------------"
-       untar11=$(ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${a[$u]} "
+       ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${a[$u]} "
            cd $mountpoint2
-           sudo tar -xpPf ${b[$u]}.tar.gz ")
+           sudo tar -xpPf ${b[$u]}.tar.gz "
        LogMsg $LOGFILE "'$untar11'"
        LogMsg $LOGFILE "----------------- UNTAR PROCESS COMPLETE FOR $test --------------"
        echo ${"untar11"}
