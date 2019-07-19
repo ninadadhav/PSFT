@@ -205,19 +205,21 @@ for ((i=0,j=0,k=0 ; i<${x1},j<${y1},k<${z1} ; i++,j++,k++));
        LogMsg $LOGFILE "----------------- TAR PROCESS COMPLETE FOR $test --------------"
        echo "Tar Process Complete for $test"
        echo
-    done 2> error.log
+    done 1> tar.log 2> tar_error.log
     sleep 1
-    LogMsg $LOGFILE "`cat error.log`"
-    echo "'$tar11'"
-    echo
-    if [ -n `cat error.log` ];
-    then
-        echo `cat error.log`
-        echo "Tar Process failed...Exiting"
-        exit 1
-    else
-         break
-    fi
+    if [[ -s tar_error.log ]];
+        then
+          if [[ `cat tar_error.log` == *"Exiting with failure status"* ]];
+               then
+                   echo "OCI Command failed...Exiting"
+                   cat tar_error.log
+                   exit 1
+          fi
+ else
+     echo "TAR EXECUTED PROPERLY"
+     cat tar.log
+fi
+
 }
 
 upload2obj(){
@@ -252,15 +254,33 @@ downloadfromobjstorage(){
 cd /home/opc
         echo "CONNECTING TO TARGET $oci_target"
         echo
-        echo " DOWNLOADING FILES FROM OBJECT STORAGE"
-        LogMsg $LOGFILE "----------------- CONNECTING TO TARGET $ipaddress --------------"
+        echo " DOWNLOADING FILES FROM OBJECT STORAGE to $mountpount2"
+        LogMsg $LOGFILE "----------------- CONNECTING TO TARGET $oci_target --------------"
         LogMsg $LOGFILE "----------------- DOWNLOADING FILES FROM OBJECT STORAGE --------------"
         ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@$oci_target "
-            oci os object bulk-download -bn OCS_Migrations --download-dir $mountpoint2 " 1> download.log 2> error.log
+            oci os object bulk-download -bn OCS_Migration --download-dir /home/opc/ocs_migration " 1> download.log 2> obj.log
         LogMsg $LOGFILE "----------------- DOWNLOAD PROCESS COMPLETE --------------"
         echo "--------------DOWNLOAD PROCESS COMPLETE --------------"
         sleep 1
+
+if [[ -s obj.log ]];
+        then
+          if [[ `cat obj.log` == *"Error"* ]];
+               then
+                   echo "OCI Command failed...Exiting"
+                   cat obj.log
+                   exit 1
+          else
+                  echo "Command Passed"
+                  cat obj.log
+          fi
+     else
+           echo "SUCCESSFULLY DOWNLOADED FROM OBJECT STORAGE"
+           sleep 1
+           cat download.log
+     fi
 }
+
 
 untar(){
 cd /home/opc
@@ -305,7 +325,7 @@ echo
 mountpoint1=$mountpoint
 mountpoint2=${mountpoint1%/}
 
-read -p 'Enter IP Address of Target Server which has OCI CLI installed in it : ' oci_target
+read -p 'Enter IP Address of Target Server which has OCI CLI installed on it : ' oci_target
 echo
 }
 
