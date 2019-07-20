@@ -305,7 +305,19 @@ for ((u=0,v=0 ; u<${a1},v<${b1} ; u++,v++));
        echo ${"untar11"}
        echo
        echo "UNTAR PROCESS COMPLETE FOR $test"
-   done
+   done 1> untar.log 2> untar_error.log
+    sleep 1
+    if [[ -s untar_error.log ]];
+        then
+          if [[ `cat untar_error.log` == *"Exiting with failure status"* ]];
+               then
+                   echo "OCI Command failed...Exiting"
+                   cat untar_error.log
+                   exit 1
+          fi
+ else
+     echo "TAR EXECUTED PROPERLY"
+     cat untar.log
 }
 
 LOGFILE=/var/log/psft-$HOSTNAME.log
