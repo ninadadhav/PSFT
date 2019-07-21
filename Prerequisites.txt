@@ -6,3 +6,12 @@ Pre-requsites for the TAR to work
 5. Sudo privelages for the Oracle User where all tasks will be performed from.
 6. One of the Target Servers needs to have OCI CLI installed to download files to NAS Storage with config file setup
 7. Common NAS Storage between All Targets.
+
+
+RED - echo $'\e[1;31m'This is a plain text without any color$'\e[0m'
+Green - echo $'\e[1;32m'"NO ERRORS FOUND.........PROCEEDING"$'\e[0m'
+Blue - echo $'\e[1;36m'"NO ERRORS FOUND.........PROCEEDING"$'\e[0m'
+Yellow - echo $'\e[1;33m'"NO ERRORS FOUND.........PROCEEDING"$'\e[0m'
+
+fallocate -l 10G 10Gigfile
+
