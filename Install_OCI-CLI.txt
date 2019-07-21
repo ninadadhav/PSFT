@@ -30,7 +30,7 @@ readvalues(){
 }
 
 private_key_function(){
-        if [ -f "$private_key ];
+        if [ -f "$private_key" ];
           then 
           echo Reading API Key
         else
