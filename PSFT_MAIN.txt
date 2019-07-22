@@ -28,7 +28,8 @@ if [[ -f $inputpath ]]
    then
        LogMsg $LOGFILE " $inputpath File found...proceeding to Tar Process"
    else
-       echo CSV File does not exist at $inputpath ....Exiting !!!
+       echo
+       echo $'\e[1;31m'CSV File does not exist at $inputpath ....Exiting !!!$'\e[0m'
        LogMsg $LOGFILE "CSV File does not exist at $inputpath ....Exiting !!!"
        echo
        exit 1
@@ -45,142 +46,147 @@ if [[ -d $mpoint2 ]];
   then
      LogMsg $LOGFILE "Directory $mpoint2 found on SOAR VM...proceeding"
   else
-     echo "****************************************************************"
-     echo "* SOURCE NAS DIRECTORY DOES NOT EXIST ON SOAR VM...EXITING !!  *"
-     echo "****************************************************************"
+     echo $'\e[1;31m'"****************************************************************"'\e[0m'
+     echo $'\e[1;31m'"* SOURCE NAS DIRECTORY DOES NOT EXIST ON SOAR VM...EXITING !!  *"'\e[0m'
+     echo $'\e[1;31m'"****************************************************************"'\e[0m'
      LogMsg $LOGFILE "NAS DIRECTORY $mpoint2 DOES NOT EXIST on SOAR VM...EXITING !!"
      exit 1
 fi
 }
 
 source_connectivity(){
-echo "Checking Source Servers Connectivity..."
+echo $'\e[1;36m'"Checking Source Servers Connectivity..."$'\e[0m'
+echo
 echo
 for f in $(cat parsed_file.csv | cut -d"," -f2);
   do
     status=$(ssh -q -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=5 -i /home/opc/keys/ocs_key opc@$f echo ok 2>&1)
     if [[ $status == ok ]] ; then
-          echo Connectivity Established to $f !!
-          echo "Checking if $mpoint2 is present on $f"
+          echo $'\e[1;32m'Connectivity Established to $f !!$'\e[0m'
+          echo
+          echo $'\e[1;36m'"Checking if $mpoint2 is present on $f"$'\e[0m'
           ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@$f "
           if [[ -d $mpoint2 ]]; then
-              echo Directory is Present at $f
+              echo $'\e[1;32m'Directory is Present at $f$...Proceeding'\e[0m'
           else
-              echo Directory $mpoint2 DOES NOT EXIST on Server $f Please Check and re-run the code!!!
+              echo $'\e[1;31m'Directory $mpoint2 DOES NOT EXIST on Server $f Please Check and re-run the code!!!$'\e[0m'
           fi" 1>source_servers.log
 
           source_out=`cat /home/opc/source_servers.log`
           if [[ "${source_out}" == *"DOES NOT EXIST"* ]]; then
-              echo "*********************************************************************************************************"
-              echo "ERROR FOUND ------------> Directory $mpoint2 DOES NOT EXIST on Source Server $f"
-              echo "*********************************************************************************************************"
+              echo $'\e[1;31m'"*********************************************************************************************************"$'\e[0m'
+              echo $'\e[1;31m'"ERROR FOUND ------------> Directory $mpoint2 DOES NOT EXIST on Source Server $f"$'\e[0m'
+              echo $'\e[1;31m'"*********************************************************************************************************"$'\e[0m'
               echo
           else
-              echo "Directory $mpoint2 present"
+              echo $'\e[1;32m'"Directory $mpoint2 present..Proceeding"$'\e[0m'
               echo
           fi
 
     elif [[ $status == "Permission denied"* ]] ; then
-       echo "Establishing Connection to $f"
-       echo "*************************************************************************************************************************"
-       echo ERROR --------> Permission Denied...Please check the ssh configuration of the Source Server $f
+       echo $'\e[1;36m'"Establishing Connection to $f"$'\e[0m'
+       echo $'\e[1;31m'"*************************************************************************************************************************"$'\e[0m'
+       echo $'\e[1;31m'ERROR --------> Permission Denied...Please check the ssh configuration of the Source Server $f$'\e[0m'
        echo
-       echo "Cannot determine if $mpoint2 is present on Source $f. Fix connectivity issue and run again "
-       echo "*************************************************************************************************************************"
+       echo $'\e[1;31m'"Cannot determine if $mpoint2 is present on Source $f. Fix connectivity issue and run again "$'\e[0m'
+       echo $'\e[1;31m'"*************************************************************************************************************************"$'\e[0m'
     else
-       echo "Establishing Connection to $f"
-       echo "*********************************************************************************************************************************************"
-       echo ERROR --------> Incorrect Authentication..Please check the IP Address and Key provided in the path to the Source Server $f.
+       echo $'\e[1;36m'"Establishing Connection to $f"$'\e[0m'
+       echo $'\e[1;31m'"*********************************************************************************************************************************************"$'\e[0m'
+       echo $'\e[1;31m'ERROR --------> Incorrect Authentication..Please check the IP Address and Key provided in the path to the Source Server $f.$'\e[0m'
        echo
-       echo "Cannot determine if $mpoint2 is present on Source $f . Fix connectivity issue and run again "
-       echo "*********************************************************************************************************************************************"
+       echo $'\e[1;31m'"Cannot determine if $mpoint2 is present on Source $f . Fix connectivity issue and run again "$'\e[0m'
+       echo $'\e[1;31m'"*********************************************************************************************************************************************"$'\e[0m'
     fi >>final.log
     sleep 1
    done
    cat final.log
    final=`cat /home/opc/final.log`
    if [[ "${final}" == *"DOES NOT EXIST"* ]]; then
-              echo ____________________________________________________________________________________________
+              echo $'\e[1;31m'____________________________________________________________________________________________$'\e[0m'
               echo
-              echo "One or more Errors have been found and highlighted above...Please fix and rerun...EXITING"
-              echo ____________________________________________________________________________________________
+              echo $'\e[1;31m'"One or more Errors have been found and highlighted above...Please fix and rerun...EXITING"$'\e[0m'
+              echo $'\e[1;31m'____________________________________________________________________________________________$'\e[0m'
               echo
               LogMsg $LOGFILE "`cat final.log`"
               LogMsg $LOGFILE "One or more Errors have been found and highlighted above...Please fix and rerun...EXITING"
               exit 1
    else
-              echo _________________________________________________________
+              echo $'\e[1;32m'_________________________________________________________$'\e[0m'
               echo
-              echo "NO ERRORS FOUND.........PROCEEDING"
-              echo _________________________________________________________
+              echo $'\e[1;32m'"No Errors found with Source Connectivity...Proceeding"$'\e[0m'
+              echo $'\e[1;32m'_________________________________________________________$'\e[0m'
               LogMsg $LOGFILE "`cat final.log`"
-              LogMsg $LOGFILE "NO ERRORS FOUND.........PROCEEDING"
+              LogMsg $LOGFILE "No Errors found with Source Connectivity...Proceeding"
    fi
 
 }
 
 target_connectivity(){
-echo "Checking Target Server Connectivity..."
+echo $'\e[1;36m'"Checking Target Server Connectivity..."$'\e[0m'
 echo
+sleep 2
 for g in $(cat parsed_file.csv | cut -d"," -f1);
   do
     status1=$(ssh -q -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=5 -i /home/opc/keys/ocs_key opc@$g echo ok 2>&1)
     if [[ $status1 == ok ]] ; then
-          echo Connectivity Established to $g !!
-          echo "Checking if $mountpoint2 is present on $g"
+          echo $'\e[1;34m'Connectivity Established to $g !!$'\e[0m'
+          echo $'\e[1;36m'"Checking if $mountpoint2 is present on $g"$'\e[0m'
+          echo
           ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@$g "
           if [[ -d $mountpoint2 ]]; then
-              echo Directory is Present at $g
+              echo $'\e[1;32m'Directory is Present at $g$'\e[0m'
           else
-              echo Directory $mountpoint2 DOES NOT EXIST on Server $g Please Check and re-run the code!!!
+              echo $'\e[1;31m'Directory $mountpoint2 DOES NOT EXIST on Server $g Please Check and re-run the code!!!$'\e[0m'
           fi" 1>target_servers.log
 
           target_out=`cat /home/opc/target_servers.log`
           if [[ "${target_out}" == *"DOES NOT EXIST"* ]]; then
-              echo "*********************************************************************************************************"
-              echo "ERROR FOUND ------------> Directory $mountpoint2 DOES NOT EXIST on Server $g"
-              echo "*********************************************************************************************************"
+              echo $'\e[1;31m'"*********************************************************************************************************"$'\e[0m'
+              echo $'\e[1;31m'"ERROR FOUND ------------> Directory $mountpoint2 DOES NOT EXIST on Server $g"$'\e[0m'
+              echo $'\e[1;31m'"*********************************************************************************************************"$'\e[0m'
               echo
           else
-              echo "Directory $mountpoint2 present"
+              echo $'\e[1;32m'"Directory $mountpoint2 present at $g ... Proceeding"$'\e[0m'
               echo
           fi
 
     elif [[ $status1 == "Permission denied"* ]] ; then
-       echo "Establishing Connection to $g"
-       echo "*************************************************************************************************************************"
-       echo ERROR ---------> Permission Denied...Please check the ssh configuration of the Target Server $g
+       echo $'\e[1;32m'"Establishing Connection to $g"$'\e[0m'
+       echo $'\e[1;31m'"*************************************************************************************************************************"$'\e[0m'
+       echo $'\e[1;31m'ERROR ---------> Permission Denied...Please check the ssh configuration of the Target Server $g$'\e[0m'
        echo
-       echo "Cannot determine if $mountpoint2 is present on Source $g. Fix connectivity issue and run again "
-       echo "*************************************************************************************************************************"
+       echo $'\e[1;31m'"Cannot determine if $mountpoint2 is present on Source $g. Fix connectivity issue and run again "$'\e[0m'
+       echo $'\e[1;31m'"*************************************************************************************************************************"$'\e[0m'
     else
-       echo "*************************************************************************************************************************"
-       echo ERROR ----------> Incorrect Authentication..Please check the IP Address and Key provided in the path to the Target Server $g.
-       echo 
-       echo "Cannot determine if $mountpoint2 is present on Source $g . Fix connectivity issue and run again "
-       echo "*************************************************************************************************************************"
+       echo $'\e[1;31m'"*************************************************************************************************************************"$'\e[0m'
+       echo $'\e[1;31m'ERROR ----------> Incorrect Authentication..Please check the IP Address and Key provided in the path to the Target Server $g.$'\e[0m'
+       echo
+       echo $'\e[1;31m'"Cannot determine if $mountpoint2 is present on Source $g . Fix connectivity issue and run again "$'\e[0m'
+       echo $'\e[1;31m'"*************************************************************************************************************************"$'\e[0m'
     fi >>final1.log
     sleep 1
    done
    cat final1.log
-   
+
    final1=`cat /home/opc/final1.log`
    if [[ "${final1}" == *"DOES NOT EXIST"* ]]; then
-              echo ____________________________________________________________________________________________
+              echo $'\e[1;31m'____________________________________________________________________________________________$'\e[0m'
               echo
-              echo "One or more Errors have been found and highlighted above...Please fix and rerun...EXITING"
-              echo ____________________________________________________________________________________________
+              echo $'\e[1;31m'"One or more Errors have been found and highlighted above...Please fix and rerun...EXITING"$'\e[0m'
+              echo $'\e[1;31m'____________________________________________________________________________________________$'\e[0m'
               LogMsg $LOGFILE "`cat final1.log`"
-              LogMsg $LOGFILE "One or more Errors have been found and highlighted above...Please fix and rerun...EXITING"
+              LogMsg $LOGFILE "One or more Errors have been found and highlighted above...Please fix and rerun...EXITING"$'\e[0m'
               echo
               exit 1
    else
-              echo _________________________________________________________
+              echo $'\e[1;32m'_________________________________________________________$'\e[0m'
               echo
-              echo "NO ERRORS FOUND.........PROCEEDING"
-              echo _________________________________________________________
-              echo LogMsg $LOGFILE "`cat final1.log`"
-              LogMsg $LOGFILE "NO ERRORS FOUND.........PROCEEDING"
+              echo $'\e[1;32m'"No Errors found with Target Connectivity... Proceeding"$'\e[0m'
+              echo $'\e[1;32m'_________________________________________________________$'\e[0m'
+              LogMsg $LOGFILE "`cat final1.log`"
+              LogMsg $LOGFILE "No Errors found with Target Connectivity... Proceeding"
+              echo
    fi
 
 }
@@ -195,15 +201,19 @@ z=(`cat /home/opc/parsed_file.csv | cut -d"," -f2-3 | sed -e "s/ /-/g" | sed -e 
 z1=${#z[@]}
 for ((i=0,j=0,k=0 ; i<${x1},j<${y1},k<${z1} ; i++,j++,k++));
     do
+       echo $'\e[1;36m'Starting TAR Process...$'\e[0m'
+       echo
+       sleep 2
        test=$(echo "${y[$i]}" | sed -e "s/-/ /g")
-       echo Current Directories being Archived and Compressed are : $test
+       echo $'\e[1;36m'Current Directories being Archived and Compressed are : $test$'\e[0m'
+       echo
        LogMsg $LOGFILE "-----------------Connecting to Source ${x[$i]} --------------"
        tar11=$(ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${x[$i]} "cd $mpoint2;
        sudo tar -cvpPf ${z[$i]}.tar.gz --totals $test && echo; bash")
        echo
        LogMsg $LOGFILE "'$tar11'"
        LogMsg $LOGFILE "----------------- TAR PROCESS COMPLETE FOR $test --------------"
-       echo "Tar Process Complete for $test"
+       echo $'\e[1;32m'"TAR Process complete for $test"$'\e[0m'
        echo
     done 1> tar.log 2> tar_error.log
     sleep 1
@@ -211,73 +221,68 @@ for ((i=0,j=0,k=0 ; i<${x1},j<${y1},k<${z1} ; i++,j++,k++));
         then
           if [[ `cat tar_error.log` == *"Exiting with failure status"* ]];
                then
-                   echo "OCI Command failed...Exiting"
+                   echo $'\e[1;31m'"TAR Process FAILED...Exiting"$'\e[0m'
                    cat tar_error.log
                    exit 1
+               else
+                    echo $'\e[1;32m'"TAR Process Completed..."$'\e[0m'
+                    cat tar.log
+                    echo
           fi
  else
-     echo "TAR EXECUTED PROPERLY"
+     echo $'\e[1;32m'"TAR Process Completed"$'\e[0m'
      cat tar.log
+     echo
 fi
 
 }
 
 upload2obj(){
-cd $mpoint2
 for file in `ls $mpoint2`;
   do
       LogMsg $LOGFILE "Starting Upload of File $file to the OCS_MIgrations Bucket on OCI Object Storage"
-      echo "Starting Upload of File $file"
-      oci os object put -bn OCS_Migrations --file $file &
+      echo $'\e[1;36m'"Starting Upload of File $file"$'\e[0m'
+      oci os object put -bn OCS_Migrations --file $mpoint2/$file &
       echo
-  done 1> upload.log 2> error.log
+  done 1> upload2obj.log 2> upload2obj_error.log
   wait
-  if [[ -s error.log ]];
+  if [[ -s upload2obj_error.log ]];
         then
-          if [[ `cat error.log` == *"Error"* ]];
+          if [[ `cat upload2obj_error.log` == *"Error"* ]];
                then
-                   echo "OCI Command failed...Exiting"
-                   cat error.log
+                   echo $'\e[1;31m'"OCI Command failed...Exiting"$'\e[0m'
+                   cat upload2obj_error.log
                    exit 1
           else
-                  echo "Unknown Error...Exiting"
-                  exit 1
+                  cat upload2obj.log
+                  echo
+                  echo $'\e[1;32m'"All Files uploaded to Object Storage"$'\e[0m'
+                  echo
           fi
-     else
-         echo "SUCCESSFULLY UPLOADED TO OBJECT STORAGE"
-         echo
-         cat upload.log
      fi
 }
 
 downloadfromobjstorage(){
 cd /home/opc
-        echo "CONNECTING TO TARGET $oci_target"
+        echo $'\e[1;36m'"Connecting to Target $oci_target to Download from Object Storage"$'\e[0m'
         echo
-        echo " DOWNLOADING FILES FROM OBJECT STORAGE to $mountpount2"
-        LogMsg $LOGFILE "----------------- CONNECTING TO TARGET $oci_target --------------"
-        LogMsg $LOGFILE "----------------- DOWNLOADING FILES FROM OBJECT STORAGE --------------"
+        LogMsg $LOGFILE "----------------- Connecting to $oci_target and downloading files--------------"
         ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@$oci_target "
-            oci os object bulk-download -bn OCS_Migration --download-dir /home/opc/ocs_migration " 1> download.log 2> obj.log
-        LogMsg $LOGFILE "----------------- DOWNLOAD PROCESS COMPLETE --------------"
-        echo "--------------DOWNLOAD PROCESS COMPLETE --------------"
+            oci os object bulk-download -bn OCS_Migrations --download-dir /home/opc/ocs_migration " 1> download.log 2> download_error.log
         sleep 1
 
-if [[ -s obj.log ]];
+if [[ -s download_error.log ]];
         then
-          if [[ `cat obj.log` == *"Error"* ]];
+          if [[ `cat download_error.log` == *"Error"* ]];
                then
-                   echo "OCI Command failed...Exiting"
-                   cat obj.log
+                   echo $'\e[1;31m'"OCI Command failed...Exiting"$'\e[0m'
+                   cat download_error.log
                    exit 1
           else
-                  echo "Command Passed"
-                  cat obj.log
+                  cat download_error.log
+                  cat download.log
+                  echo $'\e[1;32m'" All Files Downloaded from Object Storage"$'\e[0m'
           fi
-     else
-           echo "SUCCESSFULLY DOWNLOADED FROM OBJECT STORAGE"
-           sleep 1
-           cat download.log
      fi
 }
 
@@ -290,41 +295,44 @@ b=(`cat /home/opc/parsed_file.csv | cut -d"," -f2-3 | sed -e "s/ /-/g" | sed -e 
 b1=${#b[@]}
 for ((u=0,v=0 ; u<${a1},v<${b1} ; u++,v++));
     do
-       echo "----------------- CONNECTING TO TARGET ${a[$u]} --------------"
        echo
+       echo $'\e[1;36m'"Connecting to Target ${a[$u]}"$'\e[0m'
+       echo
+       sleep 2
+       echo  $'\e[1;36m'"Downloading ${b[$u]} from Object Storage to Local Storage"$'\e[0m'
        sleep 1
-       echo  "DOWNLOADING ${b[$u]} FROM OBJECT STORAGE"
-       sleep 1
-       LogMsg $LOGFILE "----------------- CONNECTING TO TARGET ${a[$u]} --------------"
-       LogMsg $LOGFILE "----------------- DOWNLOADING ${b[$u]} FROM OBJECT STORAGE --------------"
+       LogMsg $LOGFILE "CONNECTING TO TARGET ${a[$u]}"
+       echo
+       LogMsg $LOGFILE "DOWNLOADING ${b[$u]} FROM OBJECT STORAGE"
        ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${a[$u]} "
            cd $mountpoint2
-           sudo tar -xpPf ${b[$u]}.tar.gz "
-       LogMsg $LOGFILE "'$untar11'"
-       LogMsg $LOGFILE "----------------- UNTAR PROCESS COMPLETE FOR $test --------------"
-       echo ${"untar11"}
+           sudo tar -xvpPf ${b[$u]}.tar.gz "
+       LogMsg $LOGFILE "UNTAR PROCESS COMPLETE FOR $test"
        echo
-       echo "UNTAR PROCESS COMPLETE FOR $test"
+       echo $'\e[1;32m'"UNTAR PROCESS COMPLETE FOR $test"$'\e[0m'
+       echo
    done 1> untar.log 2> untar_error.log
     sleep 1
     if [[ -s untar_error.log ]];
         then
           if [[ `cat untar_error.log` == *"Exiting with failure status"* ]];
                then
-                   echo "OCI Command failed...Exiting"
+                   echo
+                   echo $'\e[1;31m'"TAR Command failed...Exiting"$'\e[0m'
                    cat untar_error.log
                    exit 1
-          fi
+         fi
  else
-     echo "TAR EXECUTED PROPERLY"
      cat untar.log
+     echo $'\e[1;32m'"Untar Process completed successfully..."$'\e[0m'
+ fi
 }
 
 LOGFILE=/var/log/psft-$HOSTNAME.log
 CreateLog ${LOGFILE}
 echo "' '" > /var/log/psft-$HOSTNAME.log
 input_csv
-rm -rf /home/opc/source_servers.log /home/opc/target_servers.log /home/opc/final.log /home/opc/final1.log
+rm -rf untar.log untar_error.log download.log download_error.log upload2obj.log upload2obj_error.log tar.log tar_error.log final1.log final.log source_servers.log target_servers.log
 
 read_values(){
 read -p 'Enter Mount Point Directory Path for Source Servers: ' mpoint
@@ -360,8 +368,8 @@ upload2obj
 downloadfromobjstorage
 untar
 echo
-echo "**********************************"
-echo PROCESS SUCCESSFULLY COMPLETED
-echo "***********************************"
-rm -rf final1.log final.log source_servers.log target_servers.log
+echo $'\e[1;32m'"**********************************"$'\e[0m'
+echo $'\e[1;32m'PROCESS SUCCESSFULLY COMPLETED$'\e[0m'
+echo $'\e[1;32m'"***********************************"$'\e[0m'
+#rm -rf untar.log untar_error.log download.log download_error.log upload2obj.log upload2obj_error.log tar.log tar_error.log final1.log final.log source_servers.log target_servers.log parsed.csv
 echo
