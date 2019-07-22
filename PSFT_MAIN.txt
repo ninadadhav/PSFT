@@ -62,7 +62,7 @@ for f in $(cat parsed_file.csv | cut -d"," -f2);
   do
     status=$(ssh -q -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=5 -i /home/opc/keys/ocs_key opc@$f echo ok 2>&1)
     if [[ $status == ok ]] ; then
-          echo $'\e[1;32m'Connectivity Established to $f !!$'\e[0m'
+          echo $'\e[1;34m'Connectivity Established to $f !!$'\e[0m'
           echo
           echo $'\e[1;36m'"Checking if $mpoint2 is present on $f"$'\e[0m'
           ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@$f "
@@ -225,7 +225,6 @@ for ((i=0,j=0,k=0 ; i<${x1},j<${y1},k<${z1} ; i++,j++,k++));
                    cat tar_error.log
                    exit 1
                else
-                    echo $'\e[1;32m'"TAR Process Completed..."$'\e[0m'
                     cat tar.log
                     echo
           fi
@@ -268,7 +267,7 @@ cd /home/opc
         echo
         LogMsg $LOGFILE "----------------- Connecting to $oci_target and downloading files--------------"
         ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@$oci_target "
-            oci os object bulk-download -bn OCS_Migrations --download-dir /home/opc/ocs_migration " 1> download.log 2> download_error.log
+            oci os object bulk-download -bn OCS_Migrations --download-dir $mountpoint2 " 1> download.log 2> download_error.log
         sleep 1
 
 if [[ -s download_error.log ]];
@@ -299,11 +298,11 @@ for ((u=0,v=0 ; u<${a1},v<${b1} ; u++,v++));
        echo $'\e[1;36m'"Connecting to Target ${a[$u]}"$'\e[0m'
        echo
        sleep 2
-       echo  $'\e[1;36m'"Downloading ${b[$u]} from Object Storage to Local Storage"$'\e[0m'
+       echo  $'\e[1;36m'"Downloading ${b[$u]}.tar.gz from Object Storage to Local Storage"$'\e[0m'
        sleep 1
        LogMsg $LOGFILE "CONNECTING TO TARGET ${a[$u]}"
        echo
-       LogMsg $LOGFILE "DOWNLOADING ${b[$u]} FROM OBJECT STORAGE"
+       LogMsg $LOGFILE "DOWNLOADING ${b[$u]}.tar.gz FROM OBJECT STORAGE"
        ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${a[$u]} "
            cd $mountpoint2
            sudo tar -xvpPf ${b[$u]}.tar.gz "
@@ -371,5 +370,5 @@ echo
 echo $'\e[1;32m'"**********************************"$'\e[0m'
 echo $'\e[1;32m'PROCESS SUCCESSFULLY COMPLETED$'\e[0m'
 echo $'\e[1;32m'"***********************************"$'\e[0m'
-#rm -rf untar.log untar_error.log download.log download_error.log upload2obj.log upload2obj_error.log tar.log tar_error.log final1.log final.log source_servers.log target_servers.log parsed.csv
+rm -rf untar.log untar_error.log download.log download_error.log upload2obj.log upload2obj_error.log tar.log tar_error.log final1.log final.log source_servers.log target_servers.log parsed.csv
 echo
