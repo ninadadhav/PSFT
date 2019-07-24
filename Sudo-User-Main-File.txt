@@ -71,9 +71,9 @@ for f in $(cat /home/$USER/parsed_file.csv | cut -d"," -f2);
               echo $'\e[1;32m'Directory is Present at $f$...Proceeding'\e[0m'
           else
               echo $'\e[1;31m'Directory $mpoint2 DOES NOT EXIST on Server $f Please Check and re-run the code!!!$'\e[0m'
-          fi" 1>/home/$USER/source_servers.log
+          fi" 1>/home/$USER/logs/source_servers.log
 
-          source_out=`cat /home/$USER/source_servers.log`
+          source_out=`cat /home/$USER/logs/source_servers.log`
           if [[ "${source_out}" == *"DOES NOT EXIST"* ]]; then
               echo $'\e[1;31m'"*********************************************************************************************************"$'\e[0m'
               echo $'\e[1;31m'"ERROR FOUND ------------> Directory $mpoint2 DOES NOT EXIST on Source Server $f"$'\e[0m'
@@ -98,18 +98,18 @@ for f in $(cat /home/$USER/parsed_file.csv | cut -d"," -f2);
        echo
        echo $'\e[1;31m'"Cannot determine if $mpoint2 is present on Source $f . Fix connectivity issue and run again "$'\e[0m'
        echo $'\e[1;31m'"*********************************************************************************************************************************************"$'\e[0m'
-    fi >>/home/$USER/final.log
+    fi >>/home/$USER/logs/final.log
     sleep 1
    done
-   cat /home/$USER/final.log
-   final=`cat /home/$USER/final.log`
+   cat /home/$USER/logs/final.log
+   final=`cat /home/$USER/logs/final.log`
    if [[ "${final}" == *"DOES NOT EXIST"* ]]; then
               echo $'\e[1;31m'____________________________________________________________________________________________$'\e[0m'
               echo
               echo $'\e[1;31m'"One or more Errors have been found and highlighted above...Please fix and rerun...EXITING"$'\e[0m'
               echo $'\e[1;31m'____________________________________________________________________________________________$'\e[0m'
               echo
-              LogMsg $LOGFILE "`cat /home/$USER/final.log`"
+              LogMsg $LOGFILE "`cat /home/$USER/logs/final.log`"
               LogMsg $LOGFILE "One or more Errors have been found and highlighted above...Please fix and rerun...EXITING"
               exit 1
    else
@@ -117,7 +117,7 @@ for f in $(cat /home/$USER/parsed_file.csv | cut -d"," -f2);
               echo
               echo $'\e[1;32m'"No Errors found with Source Connectivity...Proceeding"$'\e[0m'
               echo $'\e[1;32m'_________________________________________________________$'\e[0m'
-              LogMsg $LOGFILE "`cat /home/$USER/final.log`"
+              LogMsg $LOGFILE "`cat /home/$USER/logs/final.log`"
               LogMsg $LOGFILE "No Errors found with Source Connectivity...Proceeding"
    fi
 
@@ -139,9 +139,9 @@ for g in $(cat /home/$USER/parsed_file.csv | cut -d"," -f1);
               echo $'\e[1;32m'Directory is Present at $g$'\e[0m'
           else
               echo $'\e[1;31m'Directory $mountpoint2 DOES NOT EXIST on Server $g Please Check and re-run the code!!!$'\e[0m'
-          fi" 1>/home/$USER/target_servers.log
+          fi" 1>/home/$USER/logs/target_servers.log
 
-          target_out=`cat /home/$USER/target_servers.log`
+          target_out=`cat /home/$USER/logs/target_servers.log`
           if [[ "${target_out}" == *"DOES NOT EXIST"* ]]; then
               echo $'\e[1;31m'"*********************************************************************************************************"$'\e[0m'
               echo $'\e[1;31m'"ERROR FOUND ------------> Directory $mountpoint2 DOES NOT EXIST on Server $g"$'\e[0m'
@@ -165,18 +165,18 @@ for g in $(cat /home/$USER/parsed_file.csv | cut -d"," -f1);
        echo
        echo $'\e[1;31m'"Cannot determine if $mountpoint2 is present on Source $g . Fix connectivity issue and run again "$'\e[0m'
        echo $'\e[1;31m'"*************************************************************************************************************************"$'\e[0m'
-    fi >>/home/$USER/final1.log
+    fi >>/home/$USER/logs/final1.log
     sleep 1
    done
-   cat /home/$USER/final1.log
+   cat /home/$USER/logs/final1.log
 
-   final1=`cat /home/$USER/final1.log`
+   final1=`cat /home/$USER/logs/final1.log`
    if [[ "${final1}" == *"DOES NOT EXIST"* ]]; then
               echo $'\e[1;31m'____________________________________________________________________________________________$'\e[0m'
               echo
               echo $'\e[1;31m'"One or more Errors have been found and highlighted above...Please fix and rerun...EXITING"$'\e[0m'
               echo $'\e[1;31m'____________________________________________________________________________________________$'\e[0m'
-              LogMsg $LOGFILE "`cat /home/$USER/final1.log`"
+              LogMsg $LOGFILE "`cat /home/$USER/logs/final1.log`"
               LogMsg $LOGFILE "One or more Errors have been found and highlighted above...Please fix and rerun...EXITING"$'\e[0m'
               echo
               exit 1
@@ -185,7 +185,7 @@ for g in $(cat /home/$USER/parsed_file.csv | cut -d"," -f1);
               echo
               echo $'\e[1;32m'"No Errors found with Target Connectivity... Proceeding"$'\e[0m'
               echo $'\e[1;32m'_________________________________________________________$'\e[0m'
-              LogMsg $LOGFILE "`cat /home/$USER/final1.log`"
+              LogMsg $LOGFILE "`cat /home/$USER/logs/final1.log`"
               LogMsg $LOGFILE "No Errors found with Target Connectivity... Proceeding"
               echo
    fi
@@ -201,6 +201,8 @@ y1=${#y[@]}
 z=(`cat /home/$USER/parsed_file.csv | cut -d"," -f2-3 | sed -e "s/ /-/g" | sed -e "s/,/-/g"`)
 z1=${#z[@]}
 echo $'\e[1;33m'"STARTING TAR PROCESS...."$'\e[0m'
+echo
+echo $'\e[1;31m'"DO NOT KILL THE SHELL OR PRESS CTRL-C !!!"$'\e[0m'
 echo
 for ((i=0,j=0,k=0 ; i<${x1},j<${y1},k<${z1} ; i++,j++,k++));
     do
@@ -237,24 +239,27 @@ for ((i=0,j=0,k=0 ; i<${x1},j<${y1},k<${z1} ; i++,j++,k++));
 }
 
 upload2obj(){
+echo $'\e[1;33m'"Starting Upload to Object Storage Process..."$'\e[0m'
+echo
+echo $'\e[1;31m'"DO NOT KILL THE SHELL OR PRESS CTRL-C !!!"$'\e[0m'
 for file in `ls $mpoint2`;
   do
       LogMsg $LOGFILE "Starting Upload of File $file to the OCS_MIgrations Bucket on OCI Object Storage"
       echo $'\e[1;36m'"Starting Upload of File $file"$'\e[0m'
       oci os object put -bn OCS_Migrations --file $mpoint2/$file &
       echo
-  done 1> /home/$USER/upload2obj.log 2> /home/$USER/upload2obj_error.log
+  done 1> /home/$USER/logs/upload2obj.log 2> /home/$USER/logs/upload2obj_error.log
   wait
-  cd /home/$USER/
+  cd /home/$USER/logs
   if [[ -s upload2obj_error.log ]];
         then
-          if [[ `cat /home/$USER/upload2obj_error.log` == *"Error"* || `cat /home/$USER/upload2obj_error.log` == *"oci: command not found"* ]];
+          if [[ `cat /home/$USER/logs/upload2obj_error.log` == *"Error"* || `cat /home/$USER/logs/upload2obj_error.log` == *"oci: command not found"* ]];
                then
                    echo $'\e[1;31m'"OCI Command failed...Please check if OCI is installed and configured corectly or not...Exiting"$'\e[0m'
-                   cat /home/$USER/upload2obj_error.log
+                   cat /home/$USER/logs/upload2obj_error.log
                    exit 1
           else
-                  cat /home/$USER/upload2obj.log
+                  cat /home/$USER/logs/upload2obj.log
                   echo
                   echo $'\e[1;32m'"All Files uploaded to Object Storage"$'\e[0m'
                   echo
@@ -263,26 +268,30 @@ for file in `ls $mpoint2`;
 }
 
 downloadfromobjstorage(){
+echo $'\e[1;33m'"Starting Download from Object Storage to Target Servers..."$'\e[0m'
+echo
+echo $'\e[1;31m'"DO NOT KILL THE SHELL OR PRESS CTRL-C !!!"$'\e[0m'
+echo
 cd /home/$USER/
-        echo $'\e[1;36m'"Connecting to Target $oci_target to Download from Object Storage"$'\e[0m'
-        echo
-        LogMsg $LOGFILE "----------------- Connecting to $oci_target and downloading files--------------"
-        ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@$oci_target "
-            oci os object bulk-download -bn OCS_Migrations --download-dir $mountpoint2 " 1> /home/$USER/download.log 2> /home/$USER/download_error.log
-        sleep 1
-        cd /home/$USER/
-        if [[ `cat /home/$USER/download_error.log` == *"Error"* || `cat /home/$USER/download_error.log` == *"Permission denied"* ]];
+echo $'\e[1;36m'"Connecting to Target $oci_target to Download from Object Storage"$'\e[0m'
+echo
+LogMsg $LOGFILE "----------------- Connecting to $oci_target and downloading files--------------"
+ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@$oci_target "
+   oci os object bulk-download -bn OCS_Migrations --download-dir $mountpoint2 " 1> /home/$USER/logs/download.log 2> /home/$USER/logs/download_error.log
+   sleep 1
+   cd /home/$USER/logs
+        if [[ `cat /home/$USER/logs/download_error.log` == *"Error"* || `cat /home/$USER/logs/download_error.log` == *"Permission denied"* ]];
                then
                    echo $'\e[1;31m'"OCI Command failed due to the Following Errors...Exiting"$'\e[0m'
-                   cat /home/$USER/download_error.log
+                   cat /home/$USER/logs/download_error.log
                    exit 1
           else
-                  cat /home/$USER/download_error.log
+                  cat /home/$USER/logs/download_error.log
           fi
-          if [[ `cat /home/$USER/download.log` == *"Permission denied"* ]];
+          if [[ `cat /home/$USER/logs/download.log` == *"Permission denied"* ]];
                        then
                            echo $'\e[1;31m'"OCI Command failed due to the Following Errors...Exiting"$'\e[0m'
-                           cat /home/$USER/download.log
+                           cat /home/$USER/logs/download.log
                            exit 1
                        else
                            echo $'\e[1;32m'"ALL FILES DOWNLOADED FROM OBJECT STORAGE"$'\e[0m'
@@ -292,13 +301,15 @@ cd /home/$USER/
 
 
 untar(){
+echo $'\e[1;33m'"Starting Untar Process..."$'\e[0m'
+echo
+echo $'\e[1;31m'"DO NOT KILL THE SHELL OR PRESS CTRL-C !!!"$'\e[0m'
+echo
 cd /home/$USER/
 a=(`cat /home/$USER/parsed_file.csv | cut -d"," -f1`)
 a1=${#a[@]}
 b=(`cat /home/$USER/parsed_file.csv | cut -d"," -f2-3 | sed -e "s/ /-/g" | sed -e "s/,/-/g"`)
 b1=${#b[@]}
-echo $'\e[1;33m'"UNTAR PROCESS STARTED..."$'\e[0m'
-echo
 for ((u=0,v=0 ; u<${a1},v<${b1} ; u++,v++));
     do
        echo
@@ -306,6 +317,7 @@ for ((u=0,v=0 ; u<${a1},v<${b1} ; u++,v++));
        echo
        sleep 2
        echo  $'\e[1;36m'"Downloading ${b[$u]}.tar.gz from Object Storage to Local Storage"$'\e[0m'
+       echo $'\e[1;36m'"Download in process..."$'\e[0m'
        sleep 1
        LogMsg $LOGFILE "CONNECTING TO TARGET ${a[$u]}"
        echo
@@ -343,9 +355,12 @@ for ((u=0,v=0 ; u<${a1},v<${b1} ; u++,v++));
 
 LOGFILE=/var/log/psft-$HOSTNAME.log
 CreateLog ${LOGFILE}
+
 echo "' '" > /var/log/psft-$HOSTNAME.log
+sudo mkdir -p /home/$USER/logs
+sudo rm -rf /home/$USER/logs/*
+
 input_csv
-rm -rf /home/$USER/untar.log /home/$USER/untar_error.log /home/$USER/download.log /home/$USER/download_error.log /home/$USER/upload2obj.log /home/$USER/upload2obj_error.log /home/$USER/tar.log /home/$USER/tar_error.log /home/$USER/final1.log /home/$USER/final.log /home/$USER/source_servers.log /home/$USER/target_servers.log
 
 read_values(){
 read -p 'Enter Mount Point Directory Path for Source Servers: ' mpoint
@@ -380,9 +395,10 @@ tar1
 upload2obj
 downloadfromobjstorage
 untar
+
 echo
 echo $'\e[1;32m'"**********************************"$'\e[0m'
 echo $'\e[1;32m'PROCESS SUCCESSFULLY COMPLETED$'\e[0m'
 echo $'\e[1;32m'"**********************************"$'\e[0m'
-#rm -rf untar.log untar_error.log download.log download_error.log upload2obj.log upload2obj_error.log tar.log tar_error.log final1.log final.log source_servers.log target_servers.log parsed.csv
+
 echo
