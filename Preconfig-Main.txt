@@ -1,0 +1,67 @@
+#!/bin/bash
+LogMsg(){
+        local log=$1
+        local msg=$2
+        local pid=$$
+        local now=$(date +'%s')
+        local stamp=$(date --date "@${now}" +'%Y/%m/%d %H:%M:%S')
+        echo "${stamp}-${pid}-${msg}" >>$log
+}
+
+CreateLog(){
+        file=$1
+        [ ! -e ${file} ] && touch $file
+        sudo chmod a+rw $file
+        sudo chown opc:opc $file
+}
+
+
+input_csv(){
+echo Enter the path to the Input CSV File...
+read -p 'Input Path to the file and press Enter : ' inputpath
+if [[ -f $inputpath ]]
+   then
+       LogMsg $LOGFILE " $inputpath File found...proceeding to Tar Process"
+   else
+       echo
+       echo $'\e[1;31m'CSV File does not exist at $inputpath ....Exiting !!!$'\e[0m'
+       LogMsg $LOGFILE "CSV File does not exist at $inputpath ....Exiting !!!"
+       echo
+       exit 1
+fi
+sed -n '2,$p' <$inputpath > parsed_file.csv
+LogMsg $LOGFILE "Installing Dos2unix Package for File conversion"
+in=$(sudo yum install -q -y dos2unix && dos2unix -q parsed_file.csv)
+LogMsg $LOGFILE "$in"
+echo
+}
+
+target(){
+cd /home/$USER/PSFT
+a=(`cat parsed_file.csv | cut -d"," -f1`)
+a1=${#a[@]}
+
+for ((u=0 ; u<${a1} ; u++ ));
+    do
+        echo $'\e[1;36m'"Establishing SSH Connectivity to ${a[$u]}"$'\e[0m'
+        sudo scp -i /home/opc/keys/ocs_key /home/$USER/PSFT/preconfig.sh opc@${a[$u]}:/home/opc
+        ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${a[$u]} " sudo chown root:root preconfig.sh
+        sudo cp /home/opc/preconfig.sh /root "
+        ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${a[$u]} "sudo sh /root/preconfig.sh && sudo rm -rf /root/preconfig.sh /home/opc/preconfig.sh"
+    done 1> /home/$USER/logs/preconfig.log 2> /home/$USER/logs/preconfig_error.log
+    wait
+cat /home/$USER/logs/preconfig.log
+}
+
+LOGFILE=/var/log/psft-$HOSTNAME.log
+CreateLog ${LOGFILE}
+echo "' '" > /var/log/psft-$HOSTNAME.log
+input_csv
+sleep 1
+echo $'\e[1;36m'"Starting Preconfig Steps for PSFT"$'\e[0m'
+target
+
+echo
+echo $'\e[1;32m'"**********************************"$'\e[0m'
+echo $'\e[1;32m'PROCESS SUCCESSFULLY COMPLETED$'\e[0m'
+echo $'\e[1;32m'"***********************************"$'\e[0m'
