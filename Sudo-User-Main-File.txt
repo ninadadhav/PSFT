@@ -212,11 +212,11 @@ for ((i=0,j=0,k=0 ; i<${x1},j<${y1},k<${z1} ; i++,j++,k++));
        echo $'\e[1;36m'Current Directories being Archived and Compressed are : $test$'\e[0m'
        echo
        LogMsg $LOGFILE "-----------------Connecting to Source ${x[$i]} --------------"
-       ssh -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${x[$i]} "
+       ssh -tt -n -q -o StrictHostKeyChecking=no -i /home/opc/keys/ocs_key opc@${x[$i]} "
            cd $mpoint2
            sudo tar -cvpPf ${z[$i]}.tar.gz --totals $test 1> /tmp/remote_tar.log 2> /tmp/remote_tar_error.log"
        scp -q -i /home/opc/keys/ocs_key opc@${x[$i]}:"/tmp/remote_tar.log /tmp/remote_tar_error.log" /home/$USER/logs
-          if [[ `cat /home/$USER/logs/remote_tar_error.log` == *"Exiting with failure status"* || `cat /home/$USER/logs/remote_tar_error.log` == *"Permission denied"* ]];
+          if [[ `cat /home/$USER/logs/remote_tar_error.log` == *"Exiting with failure status"* || `cat /home/$USER/logs/remote_tar_error.log` == *"Permission denied"* || `cat /home/$USER/logs/remote_tar_error.log` == *"you must have a tty to run sudo"* ]];
                then
                    echo
                    cat /home/$USER/logs/remote_tar_error.log
@@ -246,11 +246,10 @@ for file in `ls $mpoint2`;
   do
       LogMsg $LOGFILE "Starting Upload of File $file to the OCS_MIgrations Bucket on OCI Object Storage"
       echo $'\e[1;36m'"Starting Upload of File $file"$'\e[0m'
-      oci os object put -bn OCS_Migrations --file $mpoint2/$file &
+      oci os object put -bn OCS_Migrations --file $mpoint2/$file | tee -a /home/$USER/logs/upload2obj.log 2> /home/$USER/logs/upload2obj_error.log &
       echo
-  done 1> /home/$USER/logs/upload2obj.log 2> /home/$USER/logs/upload2obj_error.log
-  wait
-  cd /home/$USER/logs
+      wait
+     cd /home/$USER/logs
   if [[ -s upload2obj_error.log ]];
         then
           if [[ `cat /home/$USER/logs/upload2obj_error.log` == *"Error"* || `cat /home/$USER/logs/upload2obj_error.log` == *"oci: command not found"* ]];
@@ -263,8 +262,9 @@ for file in `ls $mpoint2`;
                   echo
                   echo $'\e[1;32m'"All Files uploaded to Object Storage"$'\e[0m'
                   echo
-          fi
-     fi
+   fi
+fi
+  done
 }
 
 downloadfromobjstorage(){
@@ -363,17 +363,17 @@ sudo rm -rf /home/$USER/logs/*
 input_csv
 
 read_values(){
-read -p 'Enter Mount Point Directory Path for Source Servers: ' mpoint
+read -p 'Enter NAS Mount Point Directory Path for Source Servers: ' mpoint
 echo
 mpoint1=$mpoint
 mpoint2=${mpoint1%/}
 
-read -p 'Enter Mount Point Directory Path for Target Servers: ' mountpoint
+read -p 'Enter NAS Mount Point Directory Path for Target Servers: ' mountpoint
 echo
 mountpoint1=$mountpoint
 mountpoint2=${mountpoint1%/}
 
-read -p 'Enter IP Address of Target Server which has OCI CLI installed on it : ' oci_target
+read -p 'Enter IP Address of 1 of the Target Server which has OCI CLI installed on it : ' oci_target
 echo
 }
 
