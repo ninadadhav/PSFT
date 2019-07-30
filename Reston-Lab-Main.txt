@@ -1,0 +1,426 @@
+#!/bin/bash
+# ***********************************
+# Created by Ninad Adhav            *
+# Email ninad.adhav@oracle.com      *
+# ***********************************
+
+LogMsg(){
+        local log=$1
+        local msg=$2
+        local pid=$$
+        local now=$(date +'%s')
+        local stamp=$(date --date "@${now}" +'%Y/%m/%d %H:%M:%S')
+        echo "${stamp}-${pid}-${msg}" >>$log
+}
+
+CreateLog(){
+        file=$1
+        [ ! -e ${file} ] && touch $file
+        sudo chmod a+rw $file
+        sudo chown root:root $file
+}
+
+
+input_csv(){
+echo Enter the path to the Input CSV File...
+read -p 'Input Path to the file and press Enter : ' inputpath
+if [[ -f $inputpath ]]
+   then
+       LogMsg $LOGFILE " $inputpath File found...proceeding to Tar Process"
+   else
+       echo
+       echo $'\e[1;31m'CSV File does not exist at $inputpath ....Exiting !!!$'\e[0m'
+       LogMsg $LOGFILE "CSV File does not exist at $inputpath ....Exiting !!!"
+       echo
+       exit 1
+fi
+export HTTPS_PROXY=www-proxy-adcq7-new.us.oracle.com:80
+sed -n '2,$p' <$inputpath > /root/PSFT/parsed_file.csv
+LogMsg $LOGFILE "Installing Dos2unix Package for File conversion"
+#in=$(sudo yum install -q -y dos2unix pv && dos2unix -q /root/PSFT/parsed_file.csv)
+LogMsg $LOGFILE "$in"
+echo
+}
+
+soarvm_directory(){
+if [[ -d $mpoint2 ]];
+  then
+     LogMsg $LOGFILE "Directory $mpoint2 found on SOAR VM...proceeding"
+  else
+     echo $'\e[1;31m'"****************************************************************"'\e[0m'
+     echo $'\e[1;31m'"* SOURCE NAS DIRECTORY DOES NOT EXIST ON SOAR VM...EXITING !!  *"'\e[0m'
+     echo $'\e[1;31m'"****************************************************************"'\e[0m'
+     LogMsg $LOGFILE "NAS DIRECTORY $mpoint2 DOES NOT EXIST on SOAR VM (Needs to have Source Server's shared NAS) ...EXITING !!"
+     exit 1
+fi
+}
+
+source_connectivity(){
+echo $'\e[1;36m'"Checking Source Servers Connectivity..."$'\e[0m'
+echo
+echo
+sleep 2
+for f in $(cat /root/PSFT/parsed_file.csv | cut -d"," -f2);
+  do
+    status=$(ssh -q -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=5 -i /root/PSFT/keys/ocs_key oracle@$f echo ok 2>&1)
+    if [[ $status == ok ]] ; then
+          echo $'\e[1;34m'Connectivity Established to $f !!$'\e[0m'
+          echo
+          echo $'\e[1;36m'"Checking if $mpoint2 is present on $f"$'\e[0m'
+          ssh -n -q -o StrictHostKeyChecking=no -i /root/PSFT/keys/ocs_key oracle@$f "
+          if [[ -d $mpoint2 ]]; then
+              echo $'\e[1;32m'Directory is Present at $f$...Proceeding'\e[0m'
+          else
+              echo $'\e[1;31m'Directory $mpoint2 DOES NOT EXIST on Server $f Please Check and re-run the code!!!$'\e[0m'
+          fi" 1>/root/PSFT/logs/source_servers.log
+
+          source_out=`cat /root/PSFT/logs/source_servers.log`
+          if [[ "${source_out}" == *"DOES NOT EXIST"* ]]; then
+              echo $'\e[1;31m'"*********************************************************************************************************"$'\e[0m'
+              echo $'\e[1;31m'"ERROR FOUND ------------> Directory $mpoint2 DOES NOT EXIST on Source Server $f"$'\e[0m'
+              echo $'\e[1;31m'"*********************************************************************************************************"$'\e[0m'
+              echo
+          else
+              echo $'\e[1;32m'"Directory $mpoint2 present..Proceeding"$'\e[0m'
+              echo
+          fi
+
+    elif [[ $status == "Permission denied"* ]] ; then
+       echo $'\e[1;36m'"Establishing Connection to $f"$'\e[0m'
+       echo $'\e[1;31m'"*************************************************************************************************************************"$'\e[0m'
+       echo $'\e[1;31m'ERROR --------> Permission Denied...Please check the ssh configuration of the Source Server $f$'\e[0m'
+       echo
+       echo $'\e[1;31m'"Cannot determine if $mpoint2 is present on Source $f. Fix connectivity issue and run again "$'\e[0m'
+       echo $'\e[1;31m'"*************************************************************************************************************************"$'\e[0m'
+    else
+       echo $'\e[1;36m'"Establishing Connection to $f"$'\e[0m'
+       echo $'\e[1;31m'"*********************************************************************************************************************************************"$'\e[0m'
+       echo $'\e[1;31m'ERROR --------> Incorrect Authentication..Please check the IP Address and Key provided in the path to the Source Server $f.$'\e[0m'
+       echo
+       echo $'\e[1;31m'"Cannot determine if $mpoint2 is present on Source $f . Fix connectivity issue and run again "$'\e[0m'
+       echo $'\e[1;31m'"*********************************************************************************************************************************************"$'\e[0m'
+    fi >>/root/PSFT/logs/final.log
+    sleep 1
+   done
+   cat /root/PSFT/logs/final.log
+   final=`cat /root/PSFT/logs/final.log`
+   if [[ "${final}" == *"DOES NOT EXIST"* || "${final1}" == *"Cannot determine"* ]]; then
+              echo $'\e[1;31m'____________________________________________________________________________________________$'\e[0m'
+              echo
+              echo $'\e[1;31m'"One or more Errors have been found and highlighted above...Please fix and rerun...EXITING"$'\e[0m'
+              echo $'\e[1;31m'____________________________________________________________________________________________$'\e[0m'
+              echo
+              LogMsg $LOGFILE "`cat /root/PSFT/logs/final.log`"
+              LogMsg $LOGFILE "One or more Errors have been found and highlighted above...Please fix and rerun...EXITING"
+              exit 1
+   else
+              echo $'\e[1;32m'_________________________________________________________$'\e[0m'
+              echo
+              echo $'\e[1;32m'"No Errors found with Source Connectivity...Proceeding"$'\e[0m'
+              echo $'\e[1;32m'_________________________________________________________$'\e[0m'
+              LogMsg $LOGFILE "`cat /root/PSFT/logs/final.log`"
+              LogMsg $LOGFILE "No Errors found with Source Connectivity...Proceeding"
+   fi
+
+}
+
+target_connectivity(){
+echo $'\e[1;36m'"Checking Target Server Connectivity..."$'\e[0m'
+echo
+sleep 2
+for g in $(cat /root/PSFT/parsed_file.csv | cut -d"," -f1);
+  do
+    status1=$(ssh -q -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=5 -o 'ProxyCommand=nc --proxy www-proxy-adcq7-new.us.oracle.com:80 %h %p' -i /root/PSFT/keys/ocs_key oracle@$g echo ok 2>&1)
+    if [[ $status1 == ok ]] ; then
+          echo $'\e[1;34m'Connectivity Established to $g !!$'\e[0m'
+          echo $'\e[1;36m'"Checking if $mountpoint2 is present on $g"$'\e[0m'
+          echo
+          ssh -n -q -o StrictHostKeyChecking=no -o 'ProxyCommand=nc --proxy www-proxy-adcq7-new.us.oracle.com:80 %h %p' -i /root/PSFT/keys/ocs_key oracle@$g "
+          if [[ -d $mountpoint2 ]]; then
+              echo $'\e[1;32m'Directory is Present at $g$'\e[0m'
+          else
+              echo $'\e[1;31m'Directory $mountpoint2 DOES NOT EXIST on Server $g Please Check and re-run the code!!!$'\e[0m'
+          fi" 1>/root/PSFT/logs/target_servers.log
+
+          target_out=`cat /root/PSFT/logs/target_servers.log`
+          if [[ "${target_out}" == *"DOES NOT EXIST"* ]]; then
+              echo $'\e[1;31m'"*********************************************************************************************************"$'\e[0m'
+              echo $'\e[1;31m'"ERROR FOUND ------------> Directory $mountpoint2 DOES NOT EXIST on Server $g"$'\e[0m'
+              echo $'\e[1;31m'"*********************************************************************************************************"$'\e[0m'
+              echo
+          else
+              echo $'\e[1;32m'"Directory $mountpoint2 present at $g ... Proceeding"$'\e[0m'
+              echo
+          fi
+
+    elif [[ $status1 == "Permission denied"* ]] ; then
+       echo $'\e[1;32m'"Establishing Connection to $g"$'\e[0m'
+       echo $'\e[1;31m'"*************************************************************************************************************************"$'\e[0m'
+       echo $'\e[1;31m'ERROR ---------> Permission Denied...Please check the ssh configuration of the Target Server $g$'\e[0m'
+       echo
+       echo $'\e[1;31m'"Cannot determine if $mountpoint2 is present on Source $g. Fix connectivity issue and run again "$'\e[0m'
+       echo $'\e[1;31m'"*************************************************************************************************************************"$'\e[0m'
+    else
+       echo $'\e[1;31m'"*************************************************************************************************************************"$'\e[0m'
+       echo $'\e[1;31m'ERROR ----------> Incorrect Authentication..Please check the IP Address and Key provided in the path to the Target Server $g.$'\e[0m'
+       echo
+       echo $'\e[1;31m'"Cannot determine if $mountpoint2 is present on Source $g . Fix connectivity issue and run again "$'\e[0m'
+       echo $'\e[1;31m'"*************************************************************************************************************************"$'\e[0m'
+    fi >>/root/PSFT/logs/final1.log
+    sleep 1
+   done
+   cat /root/PSFT/logs/final1.log
+
+   final1=`cat /root/PSFT/logs/final1.log`
+   if [[ "${final1}" == *"DOES NOT EXIST"* || "${final1}" == *"Cannot determine"* ]]; then
+              echo $'\e[1;31m'____________________________________________________________________________________________$'\e[0m'
+              echo
+              echo $'\e[1;31m'"One or more Errors have been found and highlighted above...Please fix and rerun...EXITING"$'\e[0m'
+              echo $'\e[1;31m'____________________________________________________________________________________________$'\e[0m'
+              LogMsg $LOGFILE "`cat /root/PSFT/logs/final1.log`"
+              LogMsg $LOGFILE "One or more Errors have been found and highlighted above...Please fix and rerun...EXITING"$'\e[0m'
+              echo
+              exit 1
+   else
+              echo $'\e[1;32m'_________________________________________________________$'\e[0m'
+              echo
+              echo $'\e[1;32m'"No Errors found with Target Connectivity... Proceeding"$'\e[0m'
+              echo $'\e[1;32m'_________________________________________________________$'\e[0m'
+              LogMsg $LOGFILE "`cat /root/PSFT/logs/final1.log`"
+              LogMsg $LOGFILE "No Errors found with Target Connectivity... Proceeding"
+              echo
+   fi
+
+}
+
+tar_process(){
+cd /root
+export HTTPS_PROXY=www-proxy-adcq7-new.us.oracle.com:80
+x=(`cat /root/PSFT/parsed_file.csv | cut -d"," -f2`)
+x1=${#x[@]}
+y=(`cat /root/PSFT/parsed_file.csv | cut -d"," -f4- | sed -e "s/,/-/g"`)
+y1=${#y[@]}
+z=(`cat /root/PSFT/parsed_file.csv | cut -d"," -f2-3 | sed -e "s/ /-/g" | sed -e "s/,/-/g"`)
+z1=${#z[@]}
+echo $'\e[1;33m'"STARTING TAR PROCESS...."$'\e[0m'
+echo
+echo $'\e[1;31m'"DO NOT KILL THE SHELL OR PRESS CTRL-C !!!"$'\e[0m'
+echo
+for ((i=0,j=0,k=0 ; i<${x1},j<${y1},k<${z1} ; i++,j++,k++));
+    do
+       echo
+       sleep 2
+       test=$(echo "${y[$i]}" | sed -e "s/-/ /g")
+       echo $'\e[1;36m'Current Directories being Archived and Compressed are : $test$'\e[0m'
+       echo
+       LogMsg $LOGFILE "-----------------Connecting to Source ${x[$i]} --------------"
+       ssh -tt -n -q -o StrictHostKeyChecking=no -i /root/PSFT/keys/ocs_key oracle@${x[$i]} "
+           sudo ls $test 1> /tmp/check_dir.log 2> /tmp/check_dir_error.log"
+       scp -q -i /root/PSFT/keys/ocs_key oracle@${x[$i]}:"/tmp/check_dir.log /tmp/check_dir_error.log" /root/PSFT/logs
+       if [[ `cat /root/PSFT/logs/check_dir_error.log` == *"No such file or directory"* || `cat /root/PSFT/logs/check_dir_error.log` == *"Permission denied"* ]];
+               then
+                   echo
+                   cat /root/PSFT/logs/check_dir_error.log
+                   echo
+                   echo $'\e[1;31m'"Above Directory Does not exist on Source ${x[$i]}...Exiting"$'\e[0m'
+                   exit 1
+               else
+                   echo
+       fi
+       ssh -n -q -o StrictHostKeyChecking=no -i /root/PSFT/keys/ocs_key oracle@${x[$i]} "
+           sudo su -
+           cd $mpoint2
+           sudo tar -cvpPf ${z[$i]}.tar.gz --totals $test 1> /tmp/remote_tar.log 2> /tmp/remote_tar_error.log"
+           wait
+       scp -q -i /root/PSFT/keys/ocs_key oracle@${x[$i]}:"/tmp/remote_tar.log /tmp/remote_tar_error.log" /root/PSFT/logs
+          if [[ `cat /root/PSFT/logs/remote_tar_error.log` == *"Exiting with failure status"* || `cat /root/PSFT/logs/remote_tar_error.log` == *"Permission denied"* || `cat /root/PSFT/logs/remote_tar_error.log` == *"you must have a tty to run sudo"* ]];
+               then
+                   echo
+                   cat /root/PSFT/logs/remote_tar_error.log
+                   echo
+                   echo $'\e[1;31m'"TAR Command failed...Exiting"$'\e[0m'
+                   exit 1
+               else
+                   echo
+         fi
+         if [[ `cat /root/PSFT/logs/remote_tar_error.log` == *"Total bytes written"* ]];
+              then
+                  cat /root/PSFT/logs/remote_tar.log
+                  echo $'\e[1;32m'"tar Process completed successfully..."$'\e[0m'
+                  LogMsg $LOGFILE "TAR PROCESS COMPLETE FOR $test"
+                  echo
+                  echo $'\e[1;32m'"TAR PROCESS COMPLETE FOR $test"$'\e[0m'
+                  echo
+         fi
+done
+}
+
+upload2obj(){
+echo $'\e[1;33m'"Starting Upload to Object Storage Process..."$'\e[0m'
+echo
+echo $'\e[1;31m'"DO NOT KILL THE SHELL OR PRESS CTRL-C !!!"$'\e[0m'
+for file in `ls $mpoint2`;
+  do
+      LogMsg $LOGFILE "Starting Upload of File $file to the OCS_MIgrations Bucket on OCI Object Storage"
+      echo $'\e[1;36m'"Starting Upload of File $file"$'\e[0m'
+      oci os object put -bn OCS_Migrations --file $mpoint2/$file | tee -a /root/PSFT/logs/upload2obj.log 2> /root/PSFT/logs/upload2obj_error.log &
+      echo
+      wait
+     cd /root/PSFT/logs
+  if [[ -s upload2obj_error.log ]];
+        then
+          if [[ `cat /root/PSFT/logs/upload2obj_error.log` == *"Error"* || `cat /root/PSFT/logs/upload2obj_error.log` == *"oci: command not found"* ]];
+               then
+                   echo $'\e[1;31m'"OCI Command failed...Please check if OCI is installed and configured corectly or not...Exiting"$'\e[0m'
+                   cat /root/PSFT/logs/upload2obj_error.log
+                   exit 1
+          else
+                  cat /root/PSFT/logs/upload2obj.log
+                  echo
+                  echo $'\e[1;32m'"All Files uploaded to Object Storage"$'\e[0m'
+                  echo
+   fi
+fi
+  done
+}
+
+downloadfromobjstorage(){
+echo $'\e[1;33m'"Starting Download from Object Storage to Target Servers..."$'\e[0m'
+echo
+echo $'\e[1;31m'"DO NOT KILL THE SHELL OR PRESS CTRL-C !!!"$'\e[0m'
+echo
+cd /root
+export HTTPS_PROXY=www-proxy-adcq7-new.us.oracle.com:80
+echo $'\e[1;36m'"Connecting to Target $oci_target to Download from Object Storage"$'\e[0m'
+echo
+
+LogMsg $LOGFILE "----------------- Connecting to $oci_target and downloading files--------------"
+ssh -n -q -o StrictHostKeyChecking=no -o 'ProxyCommand=nc --proxy www-proxy-adcq7-new.us.oracle.com:80 %h %p' -i /root/PSFT/keys/ocs_key oracle@$oci_target "
+   oci os object bulk-download -bn OCS_Migrations --download-dir $mountpoint2 " 1> /root/PSFT/logs/download.log 2> /root/PSFT/logs/download_error.log
+   sleep 1
+   cd /root/PSFT/logs
+        if [[ `cat /root/PSFT/logs/download_error.log` == *"Error"* || `cat /root/PSFT/logs/download_error.log` == *"Permission denied"* || `cat /root/PSFT/logs/download_error.log` == *"oci: command not found"* ]];
+               then
+                   echo $'\e[1;31m'"OCI Command failed due to the Following Errors...Exiting"$'\e[0m'
+                   cat /root/PSFT/logs/download_error.log
+                   exit 1
+          else
+                  cat /root/PSFT/logs/download_error.log
+          fi
+          if [[ `cat /root/PSFT/logs/download.log` == *"Permission denied"* ]];
+                       then
+                           echo $'\e[1;31m'"OCI Command failed due to the Following Errors...Exiting"$'\e[0m'
+                           cat /root/PSFT/logs/download.log
+                           exit 1
+                       else
+                           echo $'\e[1;32m'"ALL FILES DOWNLOADED FROM OBJECT STORAGE"$'\e[0m'
+                           echo
+          fi
+}
+
+
+untar_process(){
+echo $'\e[1;33m'"Starting Untar Process..."$'\e[0m'
+echo
+echo $'\e[1;31m'"DO NOT KILL THE SHELL OR PRESS CTRL-C !!!"$'\e[0m'
+echo
+cd /root/PSFT
+a=(`cat /root/PSFT/parsed_file.csv | cut -d"," -f1`)
+a1=${#a[@]}
+b=(`cat /root/PSFT/parsed_file.csv | cut -d"," -f2-3 | sed -e "s/ /-/g" | sed -e "s/,/-/g"`)
+b1=${#b[@]}
+for ((u=0,v=0 ; u<${a1},v<${b1} ; u++,v++));
+    do
+       echo
+       echo $'\e[1;36m'"Connecting to Target ${a[$u]}"$'\e[0m'
+       echo
+       sleep 2
+       echo  $'\e[1;36m'"Downloading ${b[$u]}.tar.gz from Object Storage to Local Storage"$'\e[0m'
+       echo $'\e[1;36m'"Download in process..."$'\e[0m'
+       sleep 1
+       LogMsg $LOGFILE "CONNECTING TO TARGET ${a[$u]}"
+       echo
+       LogMsg $LOGFILE "DOWNLOADING ${b[$u]}.tar.gz FROM OBJECT STORAGE"
+       ssh -n -q -o StrictHostKeyChecking=no -o "ProxyCommand=nc --proxy www-proxy-adcq7-new.us.oracle.com:80 %h %p" -i /root/PSFT/keys/ocs_key oracle@${a[$u]} "
+           cd $mountpoint2
+           export HTTPS_PROXY=www-proxy-adcq7-new.us.oracle.com:80
+           sudo tar -xvpPf ${b[$u]}.tar.gz 1> /tmp/remote_untar.log 2> /tmp/remote_untar_error.log"
+       echo DONEEEEEE....
+       scp -o "ProxyCommand=nc --proxy www-proxy-adcq7-new.us.oracle.com:80 %h %p" -i /root/PSFT/keys/ocs_key oracle@${a[$u]}:"/tmp/remote_untar.log /tmp/remote_untar_error.log" /root/PSFT/logs && echo
+       if [[ -s "/root/PSFT/logs/remote_untar_error.log" ]];
+        then
+          if [[ `cat /root/PSFT/logs/remote_untar_error.log` == *"Exiting with failure status"* ]];
+               then
+                   echo
+                   echo $'\e[1;31m'"TAR Command failed...Exiting"$'\e[0m'
+                   cat /root/PSFT/logs/remote_untar_error.log
+                   exit 1
+               else
+                   echo
+                   echo $'\e[1;31m'"TAR Command failed...Exiting"$'\e[0m'
+                   cat /root/PSFT/logs/remote_untar_error.log
+                   exit 1
+         fi
+ else
+        cat /root/PSFT/logs/remote_untar.log
+        echo
+        echo $'\e[1;32m'"Untar Process completed successfully..."$'\e[0m'
+ fi
+       LogMsg $LOGFILE "UNTAR PROCESS COMPLETE FOR $test"
+       echo
+       echo $'\e[1;32m'"UNTAR PROCESS COMPLETE FOR $test"$'\e[0m'
+       echo
+    done
+    sleep 1
+}
+
+LOGFILE=/root/PSFT/psft-$HOSTNAME.log
+CreateLog ${LOGFILE}
+
+echo "' '" > /root/PSFT/psft-$HOSTNAME.log
+sudo mkdir -p /root/PSFT/logs
+sudo rm -rf /root/PSFT/logs/*
+
+export HTTPS_PROXY=www-proxy-adcq7-new.us.oracle.com:80
+input_csv
+
+read_values(){
+read -p 'Enter Mount Point Directory Path for Source Servers: ' mpoint
+echo
+mpoint1=$mpoint
+mpoint2=${mpoint1%/}
+
+read -p 'Enter Mount Point Directory Path for Target Servers: ' mountpoint
+echo
+mountpoint1=$mountpoint
+mountpoint2=${mountpoint1%/}
+
+read -p 'Enter IP Address of Target Server which has OCI CLI installed on it : ' oci_target
+echo
+}
+
+read_values
+sleep 1
+
+soarvm_directory
+sleep 1
+echo
+
+source_connectivity
+sleep 1
+echo
+
+target_connectivity
+sleep 1
+
+tar_process
+upload2obj
+downloadfromobjstorage
+untar_process
+
+echo
+echo $'\e[1;32m'"**********************************"$'\e[0m'
+echo $'\e[1;32m'PROCESS SUCCESSFULLY COMPLETED$'\e[0m'
+echo $'\e[1;32m'"**********************************"$'\e[0m'
+
+echo
