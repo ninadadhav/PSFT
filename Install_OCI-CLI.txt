@@ -1,6 +1,6 @@
 #!/bin/bash
 check_ocicli(){
-curl -L -O -s https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh >> input.log && chmod +x install.sh && ./install.sh --accept-all-defaults && && cd && source ~/.bash_profile
+curl -L -O -s https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh >> input.log && chmod +x install.sh && ./install.sh --accept-all-defaults && cd && source ~/.bash_profile
 clear
 echo OCI CLI has been successfully installed...
 fi
