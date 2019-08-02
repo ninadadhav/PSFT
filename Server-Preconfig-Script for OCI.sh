@@ -13,6 +13,10 @@ echo -e "Orapsft@123\nOrapsft@123" | passwd psoft
 sudo useradd -c "ORACLE user" -g oinstall -d /home/oracle -s /bin/bash oracle
 echo -e "Orapsft@123\nOrapsft@123" | passwd oracle
 
+#-----------make Oracle as the Sudo User-----------------
+sudo su -
+sudo echo 'oracle        ALL=(ALL)       NOPASSWD: ALL' >> /etc/sudoers
+
 #create baseline directory structure
 echo "<--------------------create baseline directory structure----------------------->"
 cd /
