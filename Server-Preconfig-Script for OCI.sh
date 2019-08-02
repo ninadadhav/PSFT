@@ -9,9 +9,9 @@ groupadd psoft
 #create user IDs
 echo "<--------------------create user IDs----------------------->"
 sudo useradd -c "PeopleSoft DEV user" -g psoft -G oinstall -d /home/psoft -s /bin/bash psoft
-echo -e "Orapsft@123" | passwd psoft
+echo -e "Orapsft@123\nOrapsft@123" | passwd psoft
 sudo useradd -c "ORACLE user" -g oinstall -d /home/oracle -s /bin/bash oracle
-echo -e "Orapsft@123" | passwd oracle
+echo -e "Orapsft@123\nOrapsft@123" | passwd oracle
 
 #create baseline directory structure
 echo "<--------------------create baseline directory structure----------------------->"
